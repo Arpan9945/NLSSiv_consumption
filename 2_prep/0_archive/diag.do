@@ -26,6 +26,8 @@ gsort -max_hh_exp
 * List the Top 10 culprits
 list s06a_code max_hh_exp total_national_exp in 1/15, sep(0)
 
+drop size
+
 
 
 
