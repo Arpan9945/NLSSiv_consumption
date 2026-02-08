@@ -1,0 +1,380 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/4_log/01_data_merge_7Feb26_19.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 7 Feb 2026, 19:28:59
+{txt}r; t=0.00 19:28:59
+{com}.         
+. {c )-}       
+{txt}r; t=0.00 19:28:59
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. 
+. use "$data_raw\S01.dta", clear 
+{txt}(NLSS04_DICT)
+r; t=0.01 19:28:59
+
+{com}. keep psu_number hh_number idcode q01_07
+{txt}r; t=0.00 19:28:59
+
+{com}. 
+. 
+. preserve
+{txt}r; t=0.00 19:28:59
+
+{com}.         use "$data_raw\S02.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 19:28:59
+
+{com}. 
+.         rename  q02_30 electricity
+{res}{txt}r; t=0.00 19:28:59
+
+{com}.         rename  q02_31_a2 landline_exp 
+{res}{txt}r; t=0.00 19:28:59
+
+{com}.         rename q02_31_b2 tv_exp 
+{res}{txt}r; t=0.00 19:28:59
+
+{com}.         rename q02_31_c2 internet_exp
+{res}{txt}r; t=0.00 19:28:59
+
+{com}.         
+.         gen totalexp = electricity + landline_exp + tv_exp + internet_exp
+{txt}(9,483 missing values generated)
+r; t=0.00 19:28:59
+
+{com}.         
+.         tempfile sec_02
+{txt}r; t=0.00 19:28:59
+
+{com}.         save `sec_02', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000002.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000002.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 19:28:59
+
+{com}. restore
+{txt}r; t=0.00 19:28:59
+
+{com}. 
+. merge m:1 psu_number hh_number using `sec_02', keepusing(electricity landline_exp tv_exp internet_exp)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}          46,870{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.03 19:28:59
+
+{com}. 
+. /*
+> Individuals are merged with their household's utility expenses
+> 
+>  Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                             0
+>     Matched                            46,870  (_merge==3)
+>     -----------------------------------------
+> */
+. assert _merge == 3
+{txt}r; t=0.00 19:28:59
+
+{com}. drop _merge
+{txt}r; t=0.00 19:28:59
+
+{com}. 
+. 
+. 
+. 
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 19:28:59
+
+{com}. display "STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)"
+{res}STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)
+{txt}r; t=0.00 19:28:59
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 19:28:59
+
+{com}. 
+. tempfile sec6a_agg
+{txt}r; t=0.00 19:28:59
+
+{com}. 
+. preserve
+{txt}r; t=0.00 19:28:59
+
+{com}.         * Load Section 6A (Non-Food Non-Durable)
+.         use "$data_raw/S06A.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.16 19:28:59
+
+{com}. 
+. 
+.         **# 2. Exclusions (Crucial Step)
+.         *------------------------------------------------------------------------------*
+.         * We DROP items that are:
+.         * 1. Major Durables (Vehicles, Appliances, Furniture) -> These go to Sec 3.2.2 (User Cost)
+.         * 2. Gambling/Lumpy/Investments -> Excluded entirely
+. 
+.         local excluded_items 0511 0512 0531 0532 0551 0711 0712 0713 0714 0911 0912 0913 0914 0922 0932 0943
+{txt}r; t=0.00 19:28:59
+
+{com}. 
+.         foreach code of local excluded_items{c -(}
+{txt}  2{com}.                 drop if s06a_code == `code'
+{txt}  3{com}.         {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.97 19:29:00
+
+{com}. 
+.         replace q06_02a_a = 0 if q06_02a_a == .
+{txt}(688,190 real changes made)
+r; t=0.09 19:29:00
+
+{com}.         replace q06_02a_b = 0 if q06_02a_b == .
+{txt}(688,190 real changes made)
+r; t=0.09 19:29:00
+
+{com}. 
+.         *Creating Annualized 30-day value
+.         gen annualized_30 = q06_02a_b * 12
+{txt}r; t=0.05 19:29:00
+
+{com}. 
+.         bysort s06a_code: egen median_30_ann = median(annualized_30) if annualized_30 > 0
+{txt}(888,007 missing values generated)
+r; t=1.59 19:29:02
+
+{com}.         bysort s06a_code: egen median_12 = median(q06_02a_a) if q06_02a_a > 0
+{txt}(688,190 missing values generated)
+r; t=1.30 19:29:03
+
+{com}. 
+.         replace median_30_ann = 0 if median_30_ann == .
+{txt}(888,007 real changes made)
+r; t=0.09 19:29:03
+
+{com}.         replace median_12 = 0 if median_12 == .
+{txt}(688,190 real changes made)
+r; t=0.07 19:29:03
+
+{com}. 
+.         gen pct_diff = abs(median_30_ann - median_12) / median_12 if median_12 > 0
+{txt}(688,190 missing values generated)
+r; t=0.09 19:29:03
+
+{com}. 
+.         gen is_regular = 0
+{txt}r; t=0.04 19:29:03
+
+{com}.         replace is_regular = 1 if pct_diff <= 0.20 & pct_diff != .
+{txt}(75,761 real changes made)
+r; t=0.08 19:29:03
+
+{com}. 
+.         *Calculate Final Item Expenditure
+.         gen final_item_exp = .
+{txt}(1,075,200 missing values generated)
+r; t=0.05 19:29:03
+
+{com}. 
+.         replace final_item_exp = annualized_30 if is_regular == 1
+{txt}(75,761 real changes made)
+r; t=0.05 19:29:03
+
+{com}.         * (Fallback: use 12-month if 30-day is 0/missing but 12-month exists)
+.         replace final_item_exp = q06_02a_a if is_regular == 1 & (final_item_exp == 0 | final_item_exp == .)
+{txt}(0 real changes made)
+r; t=0.11 19:29:04
+
+{com}. 
+.         replace final_item_exp = q06_02a_a if is_regular == 0
+{txt}(999,439 real changes made)
+r; t=0.09 19:29:04
+
+{com}.         replace final_item_exp = annualized_30 if is_regular == 0 & (final_item_exp == 0 | final_item_exp == .)
+{txt}(0 real changes made)
+r; t=0.12 19:29:04
+
+{com}. 
+.         collapse (sum) nonfood_nondurable_annual = final_item_exp, by(psu_number hh_number)
+{res}{txt}r; t=0.35 19:29:04
+
+{com}. 
+.         label var nonfood_nondurable_annual "Annual Non-Food Non-Durable Exp (S06A)"
+{txt}r; t=0.00 19:29:04
+
+{com}. 
+.         summarize nonfood_nondurable_annual, detail
+
+           {txt}Annual Non-Food Non-Durable Exp (S06A)
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}    27870            700
+{txt} 5%    {res}    59105           2620
+{txt}10%    {res}    85425           6040       {txt}Obs         {res}      9,600
+{txt}25%    {res}   145555           7400       {txt}Sum of wgt. {res}      9,600
+
+{txt}50%    {res}   255840                      {txt}Mean          {res} 367677.6
+                        {txt}Largest       Std. dev.     {res}   407683
+{txt}75%    {res}   442435        5168600
+{txt}90%    {res} 749877.5        5175170       {txt}Variance      {res} 1.66e+11
+{txt}95%    {res}  1015970        8161010       {txt}Skewness      {res} 5.241388
+{txt}99%    {res}  2000095        8188120       {txt}Kurtosis      {res}  56.9711
+{txt}r; t=0.01 19:29:04
+
+{com}. 
+.         save `sec6a_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000003.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000003.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 19:29:04
+
+{com}. restore
+{txt}r; t=0.01 19:29:04
+
+{com}. 
+. 
+. 
+. 
+. *Part b
+. * Methodology: "The final education expense is determined by taking the HIGHER 
+. * of the two estimates from Section 6 or Section 7."
+. 
+. tempfile educ_s07_agg
+{txt}r; t=0.00 19:29:04
+
+{com}. 
+. preserve
+{txt}r; t=0.00 19:29:04
+
+{com}.     use "$data_raw/S07.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 19:29:04
+
+{com}. 
+.     * 1. Clean missing values for expenses (q07_17_a to q07_17_g)
+.     foreach var of varlist q07_17_a q07_17_b q07_17_c q07_17_d q07_17_e q07_17_f q07_17_g {c -(}
+{txt}  2{com}.         replace `var' = 0 if `var' == .
+{txt}  3{com}.     {c )-}
+{txt}(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+r; t=0.04 19:29:04
+
+{com}. 
+.     * 2. Calculate Total Education Expenditure per Person
+.     * a=Schooling, b=Other fees, c=Uniforms, d=Textbooks, e=Transport, f=Tuition, g=Others
+.     egen educ_individual_total = rowtotal(q07_17_a q07_17_b q07_17_c q07_17_d q07_17_e q07_17_f q07_17_g)
+{txt}r; t=0.03 19:29:04
+
+{com}. 
+.     * 3. Aggregate to Household Level
+.     collapse (sum) educ_s07_total = educ_individual_total, by(psu_number hh_number)
+{res}{txt}r; t=0.02 19:29:04
+
+{com}. 
+.     label var educ_s07_total "Total Education Exp (S07)"
+{txt}r; t=0.00 19:29:04
+
+{com}.     save `educ_s07_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000005.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000005.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 19:29:04
+
+{com}. restore
+{txt}r; t=0.00 19:29:04
+
+{com}. 
+. 
+. 
+. 
+. 
+{txt}end of do-file
+
+r; t=5.56 19:29:04
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *               Cleaning for consumption in NLSS                                           *
+. /*
+> 
+>         Author:                         Arpan and Kapil
+>         Date created:           7th Feb 2026
+>         Date updated:           7th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. clear 
+{txt}r; t=0.01 20:01:09
+
+{com}. cap clear frames
+{txt}r; t=0.00 20:01:09
+
+{com}. set more off 
+{txt}r; t=0.00 20:01:09
+
+{com}. set rmsg on
+{txt}r; t=0.00 20:01:09
+
+{com}. local dofilename "01_class"
+{txt}r; t=0.00 20:01:09
+
+{com}. cap log close
+{smcl}
+{com}{sf}{ul off}

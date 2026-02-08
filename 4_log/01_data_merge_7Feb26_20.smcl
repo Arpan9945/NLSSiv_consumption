@@ -1,0 +1,3341 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/4_log/01_data_merge_7Feb26_20.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 7 Feb 2026, 20:03:37
+{txt}r; t=0.00 20:03:37
+{com}.         
+. {c )-}       
+{txt}r; t=0.00 20:03:37
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. 
+. use "$data_raw\S01.dta", clear 
+{txt}(NLSS04_DICT)
+r; t=0.00 20:03:37
+
+{com}. keep psu_number hh_number idcode q01_07
+{txt}r; t=0.00 20:03:37
+
+{com}. 
+. 
+. preserve
+{txt}r; t=0.00 20:03:37
+
+{com}.         use "$data_raw\S02.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 20:03:37
+
+{com}. 
+.         rename  q02_30 electricity
+{res}{txt}r; t=0.00 20:03:37
+
+{com}.         rename  q02_31_a2 landline_exp 
+{res}{txt}r; t=0.00 20:03:37
+
+{com}.         rename q02_31_b2 tv_exp 
+{res}{txt}r; t=0.00 20:03:37
+
+{com}.         rename q02_31_c2 internet_exp
+{res}{txt}r; t=0.00 20:03:37
+
+{com}.         
+.         gen totalexp = electricity + landline_exp + tv_exp + internet_exp
+{txt}(9,483 missing values generated)
+r; t=0.00 20:03:37
+
+{com}.         
+.         tempfile sec_02
+{txt}r; t=0.00 20:03:37
+
+{com}.         save `sec_02', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000002.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000002.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 20:03:37
+
+{com}. restore
+{txt}r; t=0.00 20:03:37
+
+{com}. 
+. merge m:1 psu_number hh_number using `sec_02', keepusing(electricity landline_exp tv_exp internet_exp)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}          46,870{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.04 20:03:37
+
+{com}. 
+. /*
+> Individuals are merged with their household's utility expenses
+> 
+>  Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                             0
+>     Matched                            46,870  (_merge==3)
+>     -----------------------------------------
+> */
+. assert _merge == 3
+{txt}r; t=0.00 20:03:37
+
+{com}. drop _merge
+{txt}r; t=0.00 20:03:37
+
+{com}. 
+. 
+. 
+. 
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 20:03:37
+
+{com}. display "STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)"
+{res}STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)
+{txt}r; t=0.00 20:03:37
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 20:03:37
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 1: NON-FOOD NON-DURABLE (SECTION 6A) - STRICT EXCLUSIONS                *
+. *------------------------------------------------------------------------------*
+. 
+. tempfile sec6a_agg
+{txt}r; t=0.00 20:03:37
+
+{com}. 
+. preserve 
+{txt}r; t=0.00 20:03:37
+
+{com}.     use "$data_raw/S06A.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.13 20:03:37
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * A. DEFINE EXCLUSIONS (Based on Methodology Text)
+.     *--------------------------------------------------------------------------*
+.     
+.     * 1. DURABLES (Investments/Assets)
+.     * Furniture, Vehicles, Electronics, etc.
+.     local durables 511 512 531 532 541 551 711 712 713 714 ///
+>                    911 912 913 914 922 932 943
+{txt}r; t=0.00 20:03:37
+
+{com}. 
+.     * 2. HEALTH EXPENSES (Defensive Expenditure - Excluded per Methodology)
+.     * 1051 = Preventive health care
+.     * 1052 = Treatment care (medicines, admission)
+.     local health_excluded 1051 1052
+{txt}r; t=0.00 20:03:37
+
+{com}. 
+.     * 3. NON-CONSUMPTION & LUMPY EXPENDITURES
+.     * 1241 = Donations (Transfer out)
+.     * 1251 = Life Insurance (Savings/Investment)
+.     * 1252 = Non-life Insurance (often excluded)
+.     * 1262 = Banking fees (Often considered service, but can be financial cost. We KEEP this usually as a service fee, unless "Interest payments")
+.     * 1271 = Registration/Renewal Fees (Taxes/Levies - Excluded)
+.     * 1272 = Legal Expenses (Often lumpy/admin - Excluded)
+.     * 1273 = Marriage/Death/Birth functions (Lumpy Life Events - Excluded)
+.     local lumpy_excluded 1241 1251 1252 1271 1272 1273
+{txt}r; t=0.00 20:03:37
+
+{com}. 
+.     * APPLY EXCLUSIONS
+.     foreach code of local durables {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=1.12 20:03:38
+
+{com}.     foreach code of local health_excluded {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.13 20:03:39
+
+{com}.     foreach code of local lumpy_excluded {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.42 20:03:39
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * B. IDENTIFY EDUCATION (To be compared with S07 later)
+.     *--------------------------------------------------------------------------*
+.     * 1010-1040 = School Fees
+.     * 0955 = Academic Books
+.     * 1122 = Hostel Costs
+.     gen is_education_s06 = 0
+{txt}r; t=0.03 20:03:39
+
+{com}.     replace is_education_s06 = 1 if inlist(s06a_code, 1010, 1020, 1030, 1040, 0955, 1122)
+{txt}(57,600 real changes made)
+r; t=0.07 20:03:39
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * C. CLEANING & AGGREGATION
+.     *--------------------------------------------------------------------------*
+.     
+.     * Clean Missing Values
+.     replace q06_02a_b = 0 if q06_02a_b == .  // 30-day recall
+{txt}(637,066 real changes made)
+r; t=0.10 20:03:39
+
+{com}.     replace q06_02a_a = 0 if q06_02a_a == .  // 12-month recall
+{txt}(637,066 real changes made)
+r; t=0.10 20:03:39
+
+{com}. 
+.     * Calculate Annual Expenditure (Methodology 3.2.1)
+.     gen annualized_30 = q06_02a_b * 12
+{txt}r; t=0.08 20:03:39
+
+{com}.     
+.     * Calculate Medians
+.     bysort s06a_code: egen median_30_ann = median(annualized_30) if annualized_30 > 0
+{txt}(814,001 missing values generated)
+r; t=1.71 20:03:41
+
+{com}.     bysort s06a_code: egen median_12 = median(q06_02a_a) if q06_02a_a > 0
+{txt}(637,066 missing values generated)
+r; t=1.42 20:03:43
+
+{com}.     
+.     replace median_30_ann = 0 if median_30_ann == .
+{txt}(814,001 real changes made)
+r; t=0.09 20:03:43
+
+{com}.     replace median_12 = 0 if median_12 == .
+{txt}(637,066 real changes made)
+r; t=0.09 20:03:43
+
+{com}. 
+.     * Check Regularity (Diff <= 20%)
+.     gen pct_diff = abs(median_30_ann - median_12) / median_12 if median_12 > 0
+{txt}(637,066 missing values generated)
+r; t=0.08 20:03:43
+
+{com}.     gen is_regular = 0
+{txt}r; t=0.04 20:03:43
+
+{com}.     replace is_regular = 1 if pct_diff <= 0.20 & pct_diff != .
+{txt}(75,761 real changes made)
+r; t=0.07 20:03:43
+
+{com}. 
+.     * Select Final Amount
+.     gen final_item_exp = .
+{txt}(988,800 missing values generated)
+r; t=0.05 20:03:43
+
+{com}.     replace final_item_exp = annualized_30 if is_regular == 1
+{txt}(75,761 real changes made)
+r; t=0.05 20:03:43
+
+{com}.     replace final_item_exp = q06_02a_a if is_regular == 1 & final_item_exp == 0
+{txt}(0 real changes made)
+r; t=0.07 20:03:43
+
+{com}.     replace final_item_exp = q06_02a_a if is_regular == 0
+{txt}(913,039 real changes made)
+r; t=0.08 20:03:43
+
+{com}.     replace final_item_exp = annualized_30 if is_regular == 0 & final_item_exp == 0
+{txt}(0 real changes made)
+r; t=0.10 20:03:43
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * D. COLLAPSE TO HOUSEHOLD LEVEL (Splitting Education vs Other)
+.     *--------------------------------------------------------------------------*
+.     
+.     * Sum separately for Education and Non-Education
+.     collapse (sum) educ_s06_total = final_item_exp ///
+>                    nonfood_s06_other = final_item_exp, ///
+>              by(psu_number hh_number is_education_s06)
+{res}{txt}r; t=0.40 20:03:44
+
+{com}.              
+.     * Flatten to 1 row per HH
+.     replace educ_s06_total = 0 if is_education_s06 == 0
+{txt}(9,600 real changes made)
+r; t=0.00 20:03:44
+
+{com}.     replace nonfood_s06_other = 0 if is_education_s06 == 1
+{txt}(5,923 real changes made)
+r; t=0.00 20:03:44
+
+{com}.     
+.     collapse (sum) educ_s06_total nonfood_s06_other, by(psu_number hh_number)
+{res}{txt}r; t=0.01 20:03:44
+
+{com}. 
+.     label var educ_s06_total "Education Exp (Section 6A)"
+{txt}r; t=0.00 20:03:44
+
+{com}.     label var nonfood_s06_other "Other Non-Food Exp (S06A) - Excl Health/Taxes"
+{txt}r; t=0.00 20:03:44
+
+{com}. 
+.     save `sec6a_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000003.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000003.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 20:03:44
+
+{com}. restore
+{txt}r; t=0.01 20:03:44
+
+{com}. display "Section 6A Finalized (Health & Lumpy Items Excluded)."
+{res}Section 6A Finalized (Health & Lumpy Items Excluded).
+{txt}r; t=0.00 20:03:44
+
+{com}. 
+. 
+. 
+. 
+. 
+. 
+. 
+. *------------------------------------------------------------------------------*
+. * STEP 2: EDUCATION (SECTION 7)                                                *
+. *------------------------------------------------------------------------------*
+. tempfile educ_s07_agg
+{txt}r; t=0.00 20:03:44
+
+{com}. preserve
+{txt}r; t=0.00 20:03:44
+
+{com}.     use "$data_raw/S07.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 20:03:44
+
+{com}.     foreach var of varlist q07_17_a-q07_17_g {c -(}
+{txt}  2{com}.         replace `var' = 0 if `var' == .
+{txt}  3{com}.     {c )-}
+{txt}(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+r; t=0.03 20:03:44
+
+{com}.     egen educ_individual_total = rowtotal(q07_17_a-q07_17_g)
+{txt}r; t=0.03 20:03:44
+
+{com}.     collapse (sum) educ_s07_total = educ_individual_total, by(psu_number hh_number)
+{res}{txt}r; t=0.01 20:03:44
+
+{com}.     save `educ_s07_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000005.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000005.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 20:03:44
+
+{com}. restore
+{txt}r; t=0.00 20:03:44
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 3: UTILITIES (SECTION 2)                                                *
+. *------------------------------------------------------------------------------*
+. tempfile util_agg
+{txt}r; t=0.00 20:03:44
+
+{com}. preserve
+{txt}r; t=0.00 20:03:44
+
+{com}.     use "$data_raw/S02.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 20:03:44
+
+{com}.     
+.     * Clean missing
+.     replace q02_23 = 0 if q02_23 == .   // Water (Annual)
+{txt}(1 real change made)
+r; t=0.00 20:03:44
+
+{com}.     replace q02_26 = 0 if q02_26 == .   // Garbage (Monthly)
+{txt}(7,381 real changes made)
+r; t=0.00 20:03:44
+
+{com}.     replace q02_30 = 0 if q02_30 == .   // Electricity (Annual)
+{txt}(0 real changes made)
+r; t=0.00 20:03:44
+
+{com}.     replace q02_31_a2 = 0 if q02_31_a2 == . // Landline (Annual)
+{txt}(9,430 real changes made)
+r; t=0.00 20:03:44
+
+{com}. 
+.     * Calculate Utilities (Annualize Garbage)
+.     gen utilities_annual = q02_23 + (q02_26 * 12) + q02_30 + q02_31_a2
+{txt}r; t=0.00 20:03:44
+
+{com}.     
+.     collapse (sum) utilities_annual, by(psu_number hh_number)
+{res}{txt}r; t=0.01 20:03:44
+
+{com}.     save `util_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000007.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000007.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 20:03:44
+
+{com}. restore
+{txt}r; t=0.00 20:03:44
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 4: FINAL MERGE                                                          *
+. *------------------------------------------------------------------------------*
+. use `sec6a_agg', clear
+{txt}(NLSS04_DICT)
+r; t=0.00 20:03:44
+
+{com}. 
+. * Merge S07 (Education)
+. merge 1:1 psu_number hh_number using `educ_s07_agg'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.00 20:03:44
+
+{com}. drop _merge
+{txt}r; t=0.00 20:03:44
+
+{com}. replace educ_s07_total = 0 if educ_s07_total == .
+{txt}(0 real changes made)
+r; t=0.00 20:03:44
+
+{com}. 
+. * Merge S02 (Utilities)
+. merge 1:1 psu_number hh_number using `util_agg'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 20:03:44
+
+{com}. drop _merge
+{txt}r; t=0.00 20:03:44
+
+{com}. replace utilities_annual = 0 if utilities_annual == .
+{txt}(0 real changes made)
+r; t=0.00 20:03:44
+
+{com}. 
+. * COMPUTE FINAL AGGREGATES
+. * 1. Final Education = Max(Section 6A, Section 7)
+. gen educ_final = max(educ_s06_total, educ_s07_total)
+{txt}r; t=0.00 20:03:44
+
+{com}. 
+. * 2. Final Non-Food Non-Durable Aggregate
+. * Note: Health is EXCLUDED. Taxes are EXCLUDED.
+. gen agg_nonfood_nondurable = nonfood_s06_other + educ_final + utilities_annual
+{txt}r; t=0.00 20:03:44
+
+{com}. 
+. label var agg_nonfood_nondurable "Final Non-Food Non-Durable Aggregate (Annual)"
+{txt}r; t=0.00 20:03:44
+
+{com}. 
+. * Check
+. summarize agg_nonfood_nondurable, detail
+
+        {txt}Final Non-Food Non-Durable Aggregate (Annual)
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}    24195            700
+{txt} 5%    {res}    51710           2620
+{txt}10%    {res}    75000           4720       {txt}Obs         {res}      9,600
+{txt}25%    {res}   130465           7000       {txt}Sum of wgt. {res}      9,600
+
+{txt}50%    {res}   226040                      {txt}Mean          {res}   328166
+                        {txt}Largest       Std. dev.     {res} 367679.5
+{txt}75%    {res}   394650        4703350
+{txt}90%    {res}   670775        4996410       {txt}Variance      {res} 1.35e+11
+{txt}95%    {res} 909397.5        7432510       {txt}Skewness      {res}  5.39682
+{txt}99%    {res}  1772490        7939420       {txt}Kurtosis      {res} 61.95131
+{txt}r; t=0.00 20:03:44
+
+{com}. 
+. * Save
+. save "$data_tmp/agg_nonfood_nondurable_final.dta", replace
+{txt}{p 0 4 2}
+(file {bf}
+C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/4_tmp/agg_nonfood_nondurable_final.dta{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/4_tmp/agg_nonfood_nondurable_final.dta{rm}
+saved
+{p_end}
+r; t=0.00 20:03:44
+
+{com}. 
+. 
+. 
+. 
+. 
+{txt}end of do-file
+
+r; t=6.65 20:03:44
+{com}. summarize agg_nonfood_nondurable, detail
+
+        {txt}Final Non-Food Non-Durable Aggregate (Annual)
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}    24195            700
+{txt} 5%    {res}    51710           2620
+{txt}10%    {res}    75000           4720       {txt}Obs         {res}      9,600
+{txt}25%    {res}   130465           7000       {txt}Sum of wgt. {res}      9,600
+
+{txt}50%    {res}   226040                      {txt}Mean          {res}   328166
+                        {txt}Largest       Std. dev.     {res} 367679.5
+{txt}75%    {res}   394650        4703350
+{txt}90%    {res}   670775        4996410       {txt}Variance      {res} 1.35e+11
+{txt}95%    {res} 909397.5        7432510       {txt}Skewness      {res}  5.39682
+{txt}99%    {res}  1772490        7939420       {txt}Kurtosis      {res} 61.95131
+{txt}r; t=0.03 20:03:56
+
+{com}. use "$data_raw/S06A.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.31 21:00:54
+
+{com}. {txt}r; t=0.83 21:01:00
+{com}describe using "$data_raw/S06C.dta"
+
+{txt}Contains data                                 {res}NLSS04_DICT
+{txt} Observations:{res}       240,000                  7 Jul 2024 21:36
+{txt}    Variables:{res}            11                  
+{txt}{hline}
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:psu_number     }{txt}{bind: int     }{bind:{txt}%4.0f     }{space 1}{bind:         }{bind:  }{res}{res}PSU NUMBER{p_end}
+{p 0 48}{bind:hh_number      }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}HH NUMBER{p_end}
+{p 0 48}{bind:s06c_code      }{txt}{bind: int     }{bind:{txt}%3.0f     }{space 1}{bind:         }{bind:  }{res}{res}CODE{p_end}
+{p 0 48}{bind:s06c_desc      }{txt}{bind: str100  }{bind:{txt}%-100s    }{space 1}{bind:         }{bind:  }{res}{res}Does your household own any of the following items? ITEM DESCRIPTION{p_end}
+{p 0 48}{bind:q06_03c        }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q06_03C_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Does your household own any of the following items?{p_end}
+{p 0 48}{bind:q06_04         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}How many ..[ITEM].. does your household own?{p_end}
+{p 0 48}{bind:q06_05a        }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}How many years ago did you acquire ..[ITEM]..?{p_end}
+{p 0 48}{bind:q06_05b        }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}Price of purchased or received{p_end}
+{p 0 48}{bind:q06_06a        }{txt}{bind: byte    }{bind:{txt}%3.0f     }{space 1}{bind:         }{bind:  }{res}{res}Number of items ?{p_end}
+{p 0 48}{bind:q06_06b        }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}How much was it worth when you acquired it?{p_end}
+{p 0 48}{bind:q06_07         }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}If you wanted to sell this ..[ITEM].. today, how much money would you receive fo{p_end}
+{txt}{hline}
+Sorted by: 
+r; t=0.09 21:44:44
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.14 23:22:01
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.14 23:22:01
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. summarize cpi if year == 2022
+{err}type mismatch
+{txt}{search r(109), local:r(109);} t=0.00 23:23:10
+
+end of do-file
+
+{search r(109), local:r(109);} t=0.02 23:23:10
+
+{com}. de year
+
+{txt}Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:year           }{txt}{bind: str4    }{bind:{txt}%9s       }{space 1}{bind:         }{bind:  }{res}{res}year{p_end}
+{txt}r; t=0.01 23:23:23
+
+{com}. destring year, replace
+{txt}year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.07 23:24:16
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. summarize cpi if year == 2022
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:24:20
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.00 23:24:20
+{com}. do "C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\2_durables.do"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:26:36
+
+{com}. 
+. destring year, replace
+{txt}year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.00 23:26:36
+
+{com}. summarize cpi if year == 2022
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:26:36
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:26:36
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:26:36
+
+{com}. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:26:36
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:26:36
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.17 23:26:36
+
+{com}. 
+. 
+. * Exclude Furniture (500s) and Jewelry/Watches/Utensils per methodology.
+. * KEEP Vehicles (700-799) and Electronics/Appliances (900-999).
+. keep if (s06c_code >= 700 & s06c_code < 800) | (s06c_code >= 900 & s06c_code < 999)
+{txt}(240,000 observations deleted)
+r; t=0.02 23:26:36
+
+{com}. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(0 real changes made)
+r; t=0.00 23:26:36
+
+{com}. 
+. *--- B. MERGE CPI & ADJUST PRICES ---*
+. * Calculate Purchase Year: (Survey Year 2022) - (Years Ago Purchased)
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:26:36
+
+{com}. gen purchase_year = 2022 - q06_05a
+{txt}r; t=0.00 23:26:36
+
+{com}. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}{err}variable {bf}purchase_year{sf} not found
+{txt}{search r(111), local:r(111);} t=0.00 23:26:36
+
+end of do-file
+
+{search r(111), local:r(111);} t=0.38 23:26:36
+
+{com}. do "C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\2_durables.do"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:27:21
+
+{com}. 
+. destring year, replace
+{txt}year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.00 23:27:21
+
+{com}. summarize cpi if year == 2022
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:27:21
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:27:21
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:27:21
+
+{com}. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:27:21
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:27:21
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:27:21
+
+{com}. 
+. 
+. * Exclude Furniture (500s) and Jewelry/Watches/Utensils per methodology.
+. * KEEP Vehicles (700-799) and Electronics/Appliances (900-999).
+. keep if (s06c_code >= 700 & s06c_code < 800) | (s06c_code >= 900 & s06c_code < 999)
+{txt}(240,000 observations deleted)
+r; t=0.02 23:27:21
+
+{com}. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(0 real changes made)
+r; t=0.00 23:27:21
+
+{com}. 
+. *--- B. MERGE CPI & ADJUST PRICES ---*
+. * Calculate Purchase Year: (Survey Year 2022) - (Years Ago Purchased)
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:27:21
+
+{com}. gen purchase_year = 2022 - q06_05a
+{txt}r; t=0.00 23:27:21
+
+{com}. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}{err}variable {bf}purchase_year{sf} not found
+{txt}{search r(111), local:r(111);} t=0.00 23:27:21
+
+end of do-file
+
+{search r(111), local:r(111);} t=0.09 23:27:21
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:27:41
+
+{com}. 
+. destring year, replace
+{txt}year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.00 23:27:41
+
+{com}. summarize cpi if year == 2022
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:27:41
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:27:41
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:27:41
+
+{com}. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:27:41
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:27:41
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.03 23:27:41
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.02 23:27:55
+
+{com}. 
+. destring year, replace
+{txt}year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.00 23:27:55
+
+{com}. summarize cpi if year == 2022
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:27:55
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:27:55
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:27:55
+
+{com}. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:27:55
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:27:55
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.03 23:27:55
+
+{com}. 
+. 
+. * Exclude Furniture (500s) and Jewelry/Watches/Utensils per methodology.
+. * KEEP Vehicles (700-799) and Electronics/Appliances (900-999).
+. keep if (s06c_code >= 700 & s06c_code < 800) | (s06c_code >= 900 & s06c_code < 999)
+{txt}(240,000 observations deleted)
+r; t=0.02 23:27:55
+
+{com}. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(0 real changes made)
+r; t=0.00 23:27:55
+
+{com}. 
+. *--- B. MERGE CPI & ADJUST PRICES ---*
+. * Calculate Purchase Year: (Survey Year 2022) - (Years Ago Purchased)
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:27:55
+
+{com}. gen purchase_year = 2022 - q06_05a
+{txt}r; t=0.00 23:27:55
+
+{com}. 
+. ee
+{err}command {bf}ee{sf} is unrecognized
+{txt}{search r(199), local:r(199);} t=0.00 23:27:55
+
+end of do-file
+
+{search r(199), local:r(199);} t=0.08 23:27:55
+
+{com}. de purchase_year
+
+{txt}Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:purchase_year  }{txt}{bind: float   }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}{p_end}
+{txt}r; t=0.00 23:28:00
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:28:09
+
+{com}. 
+. destring year, replace
+{txt}year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.00 23:28:09
+
+{com}. summarize cpi if year == 2022
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:28:09
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:28:09
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:28:09
+
+{com}. 
+. ee
+{err}command {bf}ee{sf} is unrecognized
+{txt}{search r(199), local:r(199);} t=0.00 23:28:09
+
+end of do-file
+
+{search r(199), local:r(199);} t=0.02 23:28:09
+
+{com}. de cpi
+
+{txt}Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:cpi            }{txt}{bind: double  }{bind:{txt}%10.0g    }{space 1}{bind:         }{bind:  }{res}{res}cpi{p_end}
+{txt}r; t=0.02 23:28:16
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:28:23
+
+{com}. 
+. destring year, replace
+{txt}year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.00 23:28:23
+
+{com}. summarize cpi if year == 2022
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:28:23
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:28:23
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:28:23
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:28:23
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:28:23
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:28:24
+
+{com}. 
+. 
+. * Exclude Furniture (500s) and Jewelry/Watches/Utensils per methodology.
+. * KEEP Vehicles (700-799) and Electronics/Appliances (900-999).
+. keep if (s06c_code >= 700 & s06c_code < 800) | (s06c_code >= 900 & s06c_code < 999)
+{txt}(240,000 observations deleted)
+r; t=0.02 23:28:24
+
+{com}. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(0 real changes made)
+r; t=0.06 23:28:24
+
+{com}. 
+. *--- B. MERGE CPI & ADJUST PRICES ---*
+. * Calculate Purchase Year: (Survey Year 2022) - (Years Ago Purchased)
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:28:24
+
+{com}. gen purchase_year = 2022 - q06_05a
+{txt}r; t=0.00 23:28:24
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}{err}variable {bf}purchase_year{sf} not found
+{txt}{search r(111), local:r(111);} t=0.00 23:28:24
+
+end of do-file
+
+{search r(111), local:r(111);} t=0.12 23:28:24
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. rename year purchase_year
+{res}{err}variable {bf}year{sf} not found
+{txt}{search r(111), local:r(111);} t=0.00 23:30:55
+
+end of do-file
+
+{search r(111), local:r(111);} t=0.01 23:30:55
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:30:59
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:30:59
+
+{com}. destring purchase_year, replace
+{txt}purchase_year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.00 23:30:59
+
+{com}. recast int purchase_year
+{txt}r; t=0.06 23:30:59
+
+{com}. 
+. summarize cpi if year == 2022
+{err}year not found
+{txt}{search r(111), local:r(111);} t=0.00 23:30:59
+
+end of do-file
+
+{search r(111), local:r(111);} t=0.09 23:30:59
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:31:09
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:31:09
+
+{com}. destring purchase_year, replace
+{txt}purchase_year: all characters numeric; {res}replaced {txt}as {res}int
+{txt}r; t=0.00 23:31:09
+
+{com}. recast int purchase_year
+{txt}r; t=0.00 23:31:09
+
+{com}. 
+. summarize cpi if purchase_year == 2022
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:31:09
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:31:09
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:31:09
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:31:09
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:31:09
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:31:09
+
+{com}. 
+. 
+. * Exclude Furniture (500s) and Jewelry/Watches/Utensils per methodology.
+. * KEEP Vehicles (700-799) and Electronics/Appliances (900-999).
+. keep if (s06c_code >= 700 & s06c_code < 800) | (s06c_code >= 900 & s06c_code < 999)
+{txt}(240,000 observations deleted)
+r; t=0.02 23:31:09
+
+{com}. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(0 real changes made)
+r; t=0.00 23:31:09
+
+{com}. 
+. *--- B. MERGE CPI & ADJUST PRICES ---*
+. * Calculate Purchase Year: (Survey Year 2022) - (Years Ago Purchased)
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:31:09
+
+{com}. gen purchase_year = 2022 - q06_05a
+{txt}r; t=0.00 23:31:09
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              51
+{txt}{col 9}from master{col 30}{res}               0{txt}  (_merge==1)
+{col 9}from using{col 30}{res}              51{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}               0{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 23:31:09
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.11 23:31:09
+{com}. {txt}r; t=0.75 23:31:49
+{com}do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:32:03
+
+{com}. 
+. 
+. * Exclude Furniture (500s) and Jewelry/Watches/Utensils per methodology.
+. * KEEP Vehicles (700-799) and Electronics/Appliances (900-999).
+. keep if (s06c_code >= 700 & s06c_code < 800) | (s06c_code >= 900 & s06c_code < 999)
+{txt}(240,000 observations deleted)
+r; t=0.02 23:32:03
+
+{com}. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(0 real changes made)
+r; t=0.01 23:32:03
+
+{com}. 
+. *--- B. MERGE CPI & ADJUST PRICES ---*
+. * Calculate Purchase Year: (Survey Year 2022) - (Years Ago Purchased)
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:32:03
+
+{com}. gen purchase_year = 2022 - q06_05a
+{txt}r; t=0.00 23:32:03
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.10 23:32:03
+{com}. {txt}r; t=0.63 23:32:12
+{com}do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.06 23:32:26
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.08 23:32:26
+{com}. count
+  {res}240,000
+{txt}r; t=0.02 23:32:30
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. * Exclude Furniture (500s) and Jewelry/Watches/Utensils per methodology.
+. * KEEP Vehicles (700-799) and Electronics/Appliances (900-999).
+. keep if (s06c_code >= 700 & s06c_code < 800) | (s06c_code >= 900 & s06c_code < 999)
+{txt}(240,000 observations deleted)
+r; t=0.02 23:32:34
+
+{com}. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(0 real changes made)
+r; t=0.00 23:32:34
+
+{com}. 
+. *--- B. MERGE CPI & ADJUST PRICES ---*
+. * Calculate Purchase Year: (Survey Year 2022) - (Years Ago Purchased)
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:32:34
+
+{com}. gen purchase_year = 2022 - q06_05a
+{txt}r; t=0.00 23:32:34
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.04 23:32:34
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.03 23:33:06
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.03 23:33:06
+{com}. {txt}r; t=0.64 23:33:13
+{com}do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:36:47
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:36:47
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.03 23:36:47
+
+{com}. 
+. summarize cpi if purchase_year == 2022
+{err}type mismatch
+{txt}{search r(109), local:r(109);} t=0.00 23:36:47
+
+end of do-file
+
+{search r(109), local:r(109);} t=0.05 23:36:47
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:37:17
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:37:17
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:37:17
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:37:17
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:37:17
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:37:17
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:37:17
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:37:17
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:37:17
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:37:17
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.01 23:37:17
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.00 23:37:18
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:37:18
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:37:18
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.09 23:37:18
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:37:18
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.03 23:37:18
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.28 23:37:18
+{com}. br if _merge == 1 | _merge == 2
+{txt}r; t=0.72 23:38:00
+
+{com}. do "C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\2_durables.do"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:52:52
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:52:52
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:52:52
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:52:52
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:52:52
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:52:52
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:52:52
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:52:52
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:52:52
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:52:52
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.01 23:52:52
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.00 23:52:52
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:52:52
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:52:52
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.07 23:52:52
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:52:52
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.04 23:52:52
+
+{com}. 
+. /*
+>   Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                            11
+>         from master                         4  (_merge==1)
+>         from using                          7  (_merge==2)
+> 
+>     Matched                            34,336  (_merge==3)
+>     -----------------------------------------
+>         
+>         Here 4 of the observations are not merged because there are items from 1957, 1959, 1962
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * Post merge fix (ignore if needed)
+. *------------------------------------------------------------------------------*
+. 
+.         drop if _merge == 2 
+{txt}(7 observations deleted)
+r; t=0.00 23:52:52
+
+{com}. 
+.         * Fix the 4 old items (1957, 1959, 1962) using 1972 data
+.         * We grab the factor for 1972 from the successful matches
+.         summarize cpi_factor if purchase_year == "1972"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cpi_factor {c |}{res}          3    47.92805           0   47.92805   47.92805
+{txt}r; t=0.00 23:52:52
+
+{com}.         local factor_1972 = r(mean)
+{txt}r; t=0.00 23:52:52
+
+{com}. 
+.         * Apply this factor to the unmatched items (where _merge == 1)
+.         replace cpi_factor = `factor_1972' if _merge == 1 & cpi_factor == .
+{txt}(4 real changes made)
+r; t=0.00 23:52:52
+
+{com}. 
+.         drop _merge
+{txt}r; t=0.00 23:52:52
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 2. CALCULATE REAL VALUE & DEPRECIATION
+. *------------------------------------------------------------------------------*
+. 
+. gen real_purchase_value = q06_05b * cpi_factor
+{txt}r; t=0.00 23:52:52
+
+{com}. 
+. 
+. 
+. 
+{txt}end of do-file
+
+r; t=0.26 23:52:52
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:53:28
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:53:28
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:53:28
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:53:28
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:53:28
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:53:28
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:53:28
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:53:28
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.14 23:53:28
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:53:28
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.01 23:53:28
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.00 23:53:28
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.02 23:53:28
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:53:28
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.07 23:53:28
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:53:28
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.05 23:53:28
+
+{com}. 
+. /*
+>   Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                            11
+>         from master                         4  (_merge==1)
+>         from using                          7  (_merge==2)
+> 
+>     Matched                            34,336  (_merge==3)
+>     -----------------------------------------
+>         
+>         Here 4 of the observations are not merged because there are items from 1957, 1959, 1962
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * Post merge fix (ignore if needed)
+. *------------------------------------------------------------------------------*
+. 
+.         drop if _merge == 2 
+{txt}(7 observations deleted)
+r; t=0.00 23:53:28
+
+{com}. 
+.         * Fix the 4 old items (1957, 1959, 1962) using 1972 data
+.         * We grab the factor for 1972 from the successful matches
+.         summarize cpi_factor if purchase_year == "1972"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cpi_factor {c |}{res}          3    47.92805           0   47.92805   47.92805
+{txt}r; t=0.00 23:53:28
+
+{com}.         local factor_1972 = r(mean)
+{txt}r; t=0.00 23:53:28
+
+{com}. 
+.         * Apply this factor to the unmatched items (where _merge == 1)
+.         replace cpi_factor = `factor_1972' if _merge == 1 & cpi_factor == .
+{txt}(4 real changes made)
+r; t=0.00 23:53:28
+
+{com}. 
+.         drop _merge
+{txt}r; t=0.00 23:53:28
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 2. CALCULATE REAL VALUE & DEPRECIATION
+. *------------------------------------------------------------------------------*
+. 
+. gen real_purchase_value = q06_05b * cpi_factor
+{txt}r; t=0.00 23:53:28
+
+{com}. 
+. * Calculate Depreciation (Delta)
+. * Formula: delta = 1 - (Current_Value / Real_Purchase_Value) ^ (1/Age)
+. * Use Age=1 for new items to avoid division by zero
+. gen age_calc = max(q06_05a, 1)
+{txt}r; t=0.00 23:53:28
+
+{com}. gen ratio = q06_07 / real_purchase_value
+{txt}(255 missing values generated)
+r; t=0.00 23:53:28
+
+{com}. gen delta_raw = 1 - (ratio)^(1/age_calc)
+{txt}(255 missing values generated)
+r; t=0.06 23:53:28
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.43 23:53:28
+{com}. hist delta_raw
+{txt}(bin={res}45{txt}, start={res}-999{txt}, width={res}22.222222{txt})
+{res}{txt}r; t=1.82 23:53:56
+
+{com}. su delta_raw
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 3}delta_raw {c |}{res}     34,085   -.0769363    5.706398       -999          1
+{txt}r; t=0.02 23:53:58
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:54:27
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:54:27
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:54:27
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:54:27
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:54:27
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:54:27
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:54:27
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:54:27
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:54:27
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:54:27
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.11 23:54:28
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.01 23:54:28
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:54:28
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:54:28
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.06 23:54:28
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:54:28
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.03 23:54:28
+
+{com}. 
+. /*
+>   Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                            11
+>         from master                         4  (_merge==1)
+>         from using                          7  (_merge==2)
+> 
+>     Matched                            34,336  (_merge==3)
+>     -----------------------------------------
+>         
+>         Here 4 of the observations are not merged because there are items from 1957, 1959, 1962
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * Post merge fix (ignore if needed)
+. *------------------------------------------------------------------------------*
+. 
+.         drop if _merge == 2 
+{txt}(7 observations deleted)
+r; t=0.00 23:54:28
+
+{com}. 
+.         * Fix the 4 old items (1957, 1959, 1962) using 1972 data
+.         * We grab the factor for 1972 from the successful matches
+.         summarize cpi_factor if purchase_year == "1972"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cpi_factor {c |}{res}          3    47.92805           0   47.92805   47.92805
+{txt}r; t=0.00 23:54:28
+
+{com}.         local factor_1972 = r(mean)
+{txt}r; t=0.00 23:54:28
+
+{com}. 
+.         * Apply this factor to the unmatched items (where _merge == 1)
+.         replace cpi_factor = `factor_1972' if _merge == 1 & cpi_factor == .
+{txt}(4 real changes made)
+r; t=0.00 23:54:28
+
+{com}. 
+.         drop _merge
+{txt}r; t=0.00 23:54:28
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 2. CALCULATE REAL VALUE & DEPRECIATION
+. *------------------------------------------------------------------------------*
+. 
+. gen real_purchase_value = q06_05b * cpi_factor
+{txt}r; t=0.00 23:54:28
+
+{com}. 
+. * Calculate Depreciation (Delta)
+. * Formula: delta = 1 - (Current_Value / Real_Purchase_Value) ^ (1/Age)
+. * Use Age=1 for new items to avoid division by zero
+. gen age_calc = max(q06_05a, 1)
+{txt}r; t=0.00 23:54:28
+
+{com}. gen ratio = q06_07 / real_purchase_value
+{txt}(255 missing values generated)
+r; t=0.00 23:54:28
+
+{com}. gen delta_raw = 1 - (ratio)^(1/age_calc)
+{txt}(255 missing values generated)
+r; t=0.00 23:54:28
+
+{com}. 
+. * Clean outliers 
+. * Delta cannot be > 1 (value dropped to zero instantly) or < 0 (value increased)
+. replace delta_raw = . if delta_raw > 1 | delta_raw < 0
+{txt}(5,563 real changes made, 5,563 to missing)
+r; t=0.00 23:54:28
+
+{com}. replace delta_raw = . if real_purchase_value <= 0
+{txt}(0 real changes made)
+r; t=0.00 23:54:28
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.30 23:54:28
+{com}. su delta_raw
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 3}delta_raw {c |}{res}     28,522    .2465516    .1512864          0          1
+{txt}r; t=0.01 23:54:32
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:56:03
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:56:03
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:56:03
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:56:03
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:56:03
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:56:03
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:56:03
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:56:03
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:56:03
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:56:03
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.01 23:56:03
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.01 23:56:03
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:56:03
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:56:03
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.06 23:56:03
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:56:03
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.03 23:56:03
+
+{com}. 
+. /*
+>   Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                            11
+>         from master                         4  (_merge==1)
+>         from using                          7  (_merge==2)
+> 
+>     Matched                            34,336  (_merge==3)
+>     -----------------------------------------
+>         
+>         Here 4 of the observations are not merged because there are items from 1957, 1959, 1962
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * Post merge fix (ignore if needed)
+. *------------------------------------------------------------------------------*
+. 
+.         drop if _merge == 2 
+{txt}(7 observations deleted)
+r; t=0.00 23:56:03
+
+{com}. 
+.         * Fix the 4 old items (1957, 1959, 1962) using 1972 data
+.         * We grab the factor for 1972 from the successful matches
+.         summarize cpi_factor if purchase_year == "1972"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cpi_factor {c |}{res}          3    47.92805           0   47.92805   47.92805
+{txt}r; t=0.00 23:56:03
+
+{com}.         local factor_1972 = r(mean)
+{txt}r; t=0.01 23:56:03
+
+{com}. 
+.         * Apply this factor to the unmatched items (where _merge == 1)
+.         replace cpi_factor = `factor_1972' if _merge == 1 & cpi_factor == .
+{txt}(4 real changes made)
+r; t=0.00 23:56:03
+
+{com}. 
+.         drop _merge
+{txt}r; t=0.00 23:56:03
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 2. CALCULATE REAL VALUE & DEPRECIATION
+. *------------------------------------------------------------------------------*
+. 
+. gen real_purchase_value = q06_05b * cpi_factor
+{txt}r; t=0.00 23:56:03
+
+{com}. 
+. * Calculate Depreciation (Delta)
+. * Formula: delta = 1 - (Current_Value / Real_Purchase_Value) ^ (1/Age)
+. * Use Age=1 for new items to avoid division by zero
+. gen age_calc = max(q06_05a, 1)
+{txt}r; t=0.00 23:56:03
+
+{com}. gen ratio = q06_07 / real_purchase_value
+{txt}(255 missing values generated)
+r; t=0.00 23:56:03
+
+{com}. gen delta_raw = 1 - (ratio)^(1/age_calc)
+{txt}(255 missing values generated)
+r; t=0.00 23:56:03
+
+{com}. 
+. * Clean outliers 
+. * Delta cannot be > 1 (value dropped to zero instantly) or < 0 (value increased)
+. replace delta_raw = . if delta_raw > 1 | delta_raw < 0
+{txt}(5,563 real changes made, 5,563 to missing)
+r; t=0.00 23:56:03
+
+{com}. replace delta_raw = . if real_purchase_value <= 0
+{txt}(0 real changes made)
+r; t=0.00 23:56:03
+
+{com}. 
+. 
+. * Define Age Groups (0-1, 2-3, 4-5, 6-10, 10+)
+. *This is mentioned in the methodology and one of the advancement from previous years
+. 
+. gen age_group = .
+{txt}(34,340 missing values generated)
+r; t=0.00 23:56:03
+
+{com}. replace age_group = 1 if q06_05a <= 1           
+{txt}(9,751 real changes made)
+r; t=0.00 23:56:03
+
+{com}. replace age_group = 2 if q06_05a >= 2 & q06_05a <= 3
+{txt}(10,517 real changes made)
+r; t=0.01 23:56:03
+
+{com}. replace age_group = 3 if q06_05a >= 4 & q06_05a <= 5
+{txt}(6,038 real changes made)
+r; t=0.00 23:56:03
+
+{com}. replace age_group = 4 if q06_05a >= 6 & q06_05a <= 10
+{txt}(5,942 real changes made)
+r; t=0.00 23:56:03
+
+{com}. replace age_group = 5 if q06_05a > 10
+{txt}(2,092 real changes made)
+r; t=0.00 23:56:03
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.28 23:56:03
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:56:15
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:56:15
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:56:15
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:56:15
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:56:15
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:56:15
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:56:15
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:56:15
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:56:15
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:56:15
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.04 23:56:15
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.00 23:56:15
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:56:15
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:56:15
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.06 23:56:15
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:56:15
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.02 23:56:15
+
+{com}. 
+. /*
+>   Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                            11
+>         from master                         4  (_merge==1)
+>         from using                          7  (_merge==2)
+> 
+>     Matched                            34,336  (_merge==3)
+>     -----------------------------------------
+>         
+>         Here 4 of the observations are not merged because there are items from 1957, 1959, 1962
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * Post merge fix (ignore if needed)
+. *------------------------------------------------------------------------------*
+. 
+.         drop if _merge == 2 
+{txt}(7 observations deleted)
+r; t=0.00 23:56:15
+
+{com}. 
+.         * Fix the 4 old items (1957, 1959, 1962) using 1972 data
+.         * We grab the factor for 1972 from the successful matches
+.         summarize cpi_factor if purchase_year == "1972"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cpi_factor {c |}{res}          3    47.92805           0   47.92805   47.92805
+{txt}r; t=0.00 23:56:15
+
+{com}.         local factor_1972 = r(mean)
+{txt}r; t=0.00 23:56:15
+
+{com}. 
+.         * Apply this factor to the unmatched items (where _merge == 1)
+.         replace cpi_factor = `factor_1972' if _merge == 1 & cpi_factor == .
+{txt}(4 real changes made)
+r; t=0.00 23:56:15
+
+{com}. 
+.         drop _merge
+{txt}r; t=0.00 23:56:15
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 2. CALCULATE REAL VALUE & DEPRECIATION
+. *------------------------------------------------------------------------------*
+. 
+. gen real_purchase_value = q06_05b * cpi_factor
+{txt}r; t=0.00 23:56:15
+
+{com}. 
+. * Calculate Depreciation (Delta)
+. * Formula: delta = 1 - (Current_Value / Real_Purchase_Value) ^ (1/Age)
+. * Use Age=1 for new items to avoid division by zero
+. gen age_calc = max(q06_05a, 1)
+{txt}r; t=0.00 23:56:15
+
+{com}. gen ratio = q06_07 / real_purchase_value
+{txt}(255 missing values generated)
+r; t=0.00 23:56:15
+
+{com}. gen delta_raw = 1 - (ratio)^(1/age_calc)
+{txt}(255 missing values generated)
+r; t=0.00 23:56:15
+
+{com}. 
+. * Clean outliers 
+. * Delta cannot be > 1 (value dropped to zero instantly) or < 0 (value increased)
+. replace delta_raw = . if delta_raw > 1 | delta_raw < 0
+{txt}(5,563 real changes made, 5,563 to missing)
+r; t=0.00 23:56:15
+
+{com}. replace delta_raw = . if real_purchase_value <= 0
+{txt}(0 real changes made)
+r; t=0.00 23:56:15
+
+{com}. 
+. 
+. * Define Age Groups (0-1, 2-3, 4-5, 6-10, 10+)
+. *This is mentioned in the methodology and one of the advancement from previous years
+. 
+. gen age_group = .
+{txt}(34,340 missing values generated)
+r; t=0.00 23:56:15
+
+{com}. replace age_group = 1 if q06_05a <= 1           
+{txt}(9,751 real changes made)
+r; t=0.00 23:56:15
+
+{com}. replace age_group = 2 if q06_05a >= 2 & q06_05a <= 3
+{txt}(10,517 real changes made)
+r; t=0.00 23:56:15
+
+{com}. replace age_group = 3 if q06_05a >= 4 & q06_05a <= 5
+{txt}(6,038 real changes made)
+r; t=0.01 23:56:15
+
+{com}. replace age_group = 4 if q06_05a >= 6 & q06_05a <= 10
+{txt}(5,942 real changes made)
+r; t=0.00 23:56:15
+
+{com}. replace age_group = 5 if q06_05a > 10
+{txt}(2,092 real changes made)
+r; t=0.00 23:56:15
+
+{com}. 
+. bysort s06c_code age_group: egen median_delta = median(delta_raw)
+{txt}r; t=0.04 23:56:15
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.27 23:56:15
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:58:01
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:58:01
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:58:01
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:58:01
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:58:01
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:58:01
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:58:01
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:58:01
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:58:01
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:58:01
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.01 23:58:01
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.01 23:58:01
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:58:01
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:58:01
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.06 23:58:01
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:58:01
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.06 23:58:01
+
+{com}. 
+. /*
+>   Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                            11
+>         from master                         4  (_merge==1)
+>         from using                          7  (_merge==2)
+> 
+>     Matched                            34,336  (_merge==3)
+>     -----------------------------------------
+>         
+>         Here 4 of the observations are not merged because there are items from 1957, 1959, 1962
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * Post merge fix (ignore if needed)
+. *------------------------------------------------------------------------------*
+. 
+.         drop if _merge == 2 
+{txt}(7 observations deleted)
+r; t=0.00 23:58:01
+
+{com}. 
+.         * Fix the 4 old items (1957, 1959, 1962) using 1972 data
+.         * We grab the factor for 1972 from the successful matches
+.         summarize cpi_factor if purchase_year == "1972"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cpi_factor {c |}{res}          3    47.92805           0   47.92805   47.92805
+{txt}r; t=0.00 23:58:01
+
+{com}.         local factor_1972 = r(mean)
+{txt}r; t=0.00 23:58:01
+
+{com}. 
+.         * Apply this factor to the unmatched items (where _merge == 1)
+.         replace cpi_factor = `factor_1972' if _merge == 1 & cpi_factor == .
+{txt}(4 real changes made)
+r; t=0.00 23:58:01
+
+{com}. 
+.         drop _merge
+{txt}r; t=0.00 23:58:01
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 2. CALCULATE REAL VALUE & DEPRECIATION
+. *------------------------------------------------------------------------------*
+. 
+. gen real_purchase_value = q06_05b * cpi_factor
+{txt}r; t=0.00 23:58:01
+
+{com}. 
+. * Calculate Depreciation (Delta)
+. * Formula: delta = 1 - (Current_Value / Real_Purchase_Value) ^ (1/Age)
+. * Use Age=1 for new items to avoid division by zero
+. gen age_calc = max(q06_05a, 1)
+{txt}r; t=0.00 23:58:01
+
+{com}. gen ratio = q06_07 / real_purchase_value
+{txt}(255 missing values generated)
+r; t=0.00 23:58:01
+
+{com}. gen delta_raw = 1 - (ratio)^(1/age_calc)
+{txt}(255 missing values generated)
+r; t=0.00 23:58:01
+
+{com}. 
+. * Clean outliers 
+. * Delta cannot be > 1 (value dropped to zero instantly) or < 0 (value increased)
+. replace delta_raw = . if delta_raw > 1 | delta_raw < 0
+{txt}(5,563 real changes made, 5,563 to missing)
+r; t=0.00 23:58:01
+
+{com}. replace delta_raw = . if real_purchase_value <= 0
+{txt}(0 real changes made)
+r; t=0.00 23:58:01
+
+{com}. 
+. 
+. * Define Age Groups (0-1, 2-3, 4-5, 6-10, 10+)
+. *This is mentioned in the methodology and one of the advancement from previous years
+. 
+. gen age_group = .
+{txt}(34,340 missing values generated)
+r; t=0.00 23:58:01
+
+{com}. replace age_group = 1 if q06_05a <= 1           
+{txt}(9,751 real changes made)
+r; t=0.00 23:58:01
+
+{com}. replace age_group = 2 if q06_05a >= 2 & q06_05a <= 3
+{txt}(10,517 real changes made)
+r; t=0.00 23:58:01
+
+{com}. replace age_group = 3 if q06_05a >= 4 & q06_05a <= 5
+{txt}(6,038 real changes made)
+r; t=0.01 23:58:01
+
+{com}. replace age_group = 4 if q06_05a >= 6 & q06_05a <= 10
+{txt}(5,942 real changes made)
+r; t=0.00 23:58:01
+
+{com}. replace age_group = 5 if q06_05a > 10
+{txt}(2,092 real changes made)
+r; t=0.00 23:58:01
+
+{com}. 
+. bysort s06c_code age_group: egen median_delta = median(delta_raw)
+{txt}r; t=0.05 23:58:01
+
+{com}. 
+. * Fill missing medians with item's overall median, then global default (0.2)
+. bysort s06c_code: egen global_item_median = median(delta_raw)
+{txt}r; t=0.03 23:58:01
+
+{com}. replace median_delta = global_item_median if median_delta == .
+{txt}(0 real changes made)
+r; t=0.00 23:58:01
+
+{com}. replace median_delta = 0.20 if median_delta == .
+{txt}(0 real changes made)
+r; t=0.00 23:58:01
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.39 23:58:01
+{com}. do "C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\2_durables.do"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:59:45
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:59:45
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:59:45
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:59:45
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:59:45
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:59:45
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:59:45
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:59:45
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:59:45
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:59:45
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.01 23:59:45
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.00 23:59:45
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:59:45
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:59:45
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.06 23:59:45
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:59:45
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.02 23:59:45
+
+{com}. 
+. /*
+>   Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                            11
+>         from master                         4  (_merge==1)
+>         from using                          7  (_merge==2)
+> 
+>     Matched                            34,336  (_merge==3)
+>     -----------------------------------------
+>         
+>         Here 4 of the observations are not merged because there are items from 1957, 1959, 1962
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * Post merge fix (ignore if needed)
+. *------------------------------------------------------------------------------*
+. 
+.         drop if _merge == 2 
+{txt}(7 observations deleted)
+r; t=0.00 23:59:45
+
+{com}. 
+.         * Fix the 4 old items (1957, 1959, 1962) using 1972 data
+.         * We grab the factor for 1972 from the successful matches
+.         summarize cpi_factor if purchase_year == "1972"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cpi_factor {c |}{res}          3    47.92805           0   47.92805   47.92805
+{txt}r; t=0.00 23:59:45
+
+{com}.         local factor_1972 = r(mean)
+{txt}r; t=0.00 23:59:45
+
+{com}. 
+.         * Apply this factor to the unmatched items (where _merge == 1)
+.         replace cpi_factor = `factor_1972' if _merge == 1 & cpi_factor == .
+{txt}(4 real changes made)
+r; t=0.00 23:59:45
+
+{com}. 
+.         drop _merge
+{txt}r; t=0.00 23:59:45
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 2. CALCULATE REAL VALUE & DEPRECIATION
+. *------------------------------------------------------------------------------*
+. 
+. gen real_purchase_value = q06_05b * cpi_factor
+{txt}r; t=0.00 23:59:45
+
+{com}. 
+. * Calculate Depreciation (Delta)
+. * Formula: delta = 1 - (Current_Value / Real_Purchase_Value) ^ (1/Age)
+. * Use Age=1 for new items to avoid division by zero
+. gen age_calc = max(q06_05a, 1)
+{txt}r; t=0.00 23:59:45
+
+{com}. gen ratio = q06_07 / real_purchase_value
+{txt}(255 missing values generated)
+r; t=0.00 23:59:45
+
+{com}. gen delta_raw = 1 - (ratio)^(1/age_calc)
+{txt}(255 missing values generated)
+r; t=0.00 23:59:45
+
+{com}. 
+. * Clean outliers 
+. * Delta cannot be > 1 (value dropped to zero instantly) or < 0 (value increased)
+. replace delta_raw = . if delta_raw > 1 | delta_raw < 0
+{txt}(5,563 real changes made, 5,563 to missing)
+r; t=0.00 23:59:45
+
+{com}. replace delta_raw = . if real_purchase_value <= 0
+{txt}(0 real changes made)
+r; t=0.00 23:59:45
+
+{com}. 
+. 
+. * Define Age Groups (0-1, 2-3, 4-5, 6-10, 10+)
+. *This is mentioned in the methodology and one of the advancement from previous years
+. 
+. gen age_group = .
+{txt}(34,340 missing values generated)
+r; t=0.00 23:59:45
+
+{com}. replace age_group = 1 if q06_05a <= 1           
+{txt}(9,751 real changes made)
+r; t=0.00 23:59:45
+
+{com}. replace age_group = 2 if q06_05a >= 2 & q06_05a <= 3
+{txt}(10,517 real changes made)
+r; t=0.00 23:59:45
+
+{com}. replace age_group = 3 if q06_05a >= 4 & q06_05a <= 5
+{txt}(6,038 real changes made)
+r; t=0.00 23:59:45
+
+{com}. replace age_group = 4 if q06_05a >= 6 & q06_05a <= 10
+{txt}(5,942 real changes made)
+r; t=0.00 23:59:45
+
+{com}. replace age_group = 5 if q06_05a > 10
+{txt}(2,092 real changes made)
+r; t=0.00 23:59:45
+
+{com}. 
+. bysort s06c_code age_group: egen median_delta = median(delta_raw)
+{txt}r; t=0.04 23:59:45
+
+{com}. 
+. * Fill missing medians with item's overall median, then global default (0.2)
+. bysort s06c_code: egen global_item_median = median(delta_raw)
+{txt}r; t=0.02 23:59:45
+
+{com}. replace median_delta = global_item_median if median_delta == .
+{txt}(0 real changes made)
+r; t=0.00 23:59:45
+
+{com}. replace median_delta = 0.20 if median_delta == .
+{txt}(0 real changes made)
+r; t=0.00 23:59:45
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 4. CALCULATE USER COST (CONSUMPTION FLOW)
+. *------------------------------------------------------------------------------*
+. 
+. * Formula: UserCost = (CurrentValue * Qty) * ( (r + delta) / (1 - delta) )
+. **# Real Interest Rate = 0.05 (Update Later after looking the actual figures)
+. scalar r_real = 0.05
+{txt}r; t=0.00 23:59:45
+
+{com}. 
+. gen current_val_total = q06_07 * q06_04
+{txt}r; t=0.00 23:59:45
+
+{com}. gen user_cost_item = current_val_total * ( (r_real + median_delta) / (1 - median_delta) )
+{txt}r; t=0.00 23:59:45
+
+{com}. 
+. * Handle missings
+. replace user_cost_item = 0 if user_cost_item == .
+{txt}(0 real changes made)
+r; t=0.00 23:59:45
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.27 23:59:45
+{com}. do "C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\2_durables.do"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 23:59:59
+
+{com}. 
+. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 23:59:59
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 23:59:59
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 23:59:59
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 23:59:59
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 23:59:59
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.02 23:59:59
+
+{com}. 
+. 
+. * Exclude: 522 (Watch), 523 (Furniture), 524 (Utensils) and only the household owning them
+. keep if s06c_code >= 501 & s06c_code <= 521
+{txt}(38,400 observations deleted)
+r; t=0.02 23:59:59
+
+{com}. keep if q06_03c == 1
+{txt}(167,260 observations deleted)
+r; t=0.04 23:59:59
+
+{com}. 
+. replace q06_04 = 1 if q06_04 == . | q06_04 == 0
+{txt}(1 real change made)
+r; t=0.00 23:59:59
+
+{com}. 
+. replace q06_05a = 0 if q06_05a == . 
+{txt}(0 real changes made)
+r; t=0.00 23:59:59
+
+{com}. gen purchase_year_num = 2022 - q06_05a
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+. tostring purchase_year_num, generate(purchase_year)
+{txt}purchase_year generated as {res:str4}
+r; t=0.06 23:59:59
+
+{com}. replace purchase_year = trim(purchase_year)
+{txt}(0 real changes made)
+r; t=0.00 23:59:59
+
+{com}. 
+. 
+. * Merge with CPI data
+. merge m:1 purchase_year using `cpi_data'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}              11
+{txt}{col 9}from master{col 30}{res}               4{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               7{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}          34,336{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.03 23:59:59
+
+{com}. 
+. /*
+>   Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                            11
+>         from master                         4  (_merge==1)
+>         from using                          7  (_merge==2)
+> 
+>     Matched                            34,336  (_merge==3)
+>     -----------------------------------------
+>         
+>         Here 4 of the observations are not merged because there are items from 1957, 1959, 1962
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * Post merge fix (ignore if needed)
+. *------------------------------------------------------------------------------*
+. 
+.         drop if _merge == 2 
+{txt}(7 observations deleted)
+r; t=0.00 23:59:59
+
+{com}. 
+.         * Fix the 4 old items (1957, 1959, 1962) using 1972 data
+.         * We grab the factor for 1972 from the successful matches
+.         summarize cpi_factor if purchase_year == "1972"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 2}cpi_factor {c |}{res}          3    47.92805           0   47.92805   47.92805
+{txt}r; t=0.00 23:59:59
+
+{com}.         local factor_1972 = r(mean)
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+.         * Apply this factor to the unmatched items (where _merge == 1)
+.         replace cpi_factor = `factor_1972' if _merge == 1 & cpi_factor == .
+{txt}(4 real changes made)
+r; t=0.00 23:59:59
+
+{com}. 
+.         drop _merge
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 2. CALCULATE REAL VALUE & DEPRECIATION
+. *------------------------------------------------------------------------------*
+. 
+. gen real_purchase_value = q06_05b * cpi_factor
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+. * Calculate Depreciation (Delta)
+. * Formula: delta = 1 - (Current_Value / Real_Purchase_Value) ^ (1/Age)
+. * Use Age=1 for new items to avoid division by zero
+. gen age_calc = max(q06_05a, 1)
+{txt}r; t=0.00 23:59:59
+
+{com}. gen ratio = q06_07 / real_purchase_value
+{txt}(255 missing values generated)
+r; t=0.00 23:59:59
+
+{com}. gen delta_raw = 1 - (ratio)^(1/age_calc)
+{txt}(255 missing values generated)
+r; t=0.00 23:59:59
+
+{com}. 
+. * Clean outliers 
+. * Delta cannot be > 1 (value dropped to zero instantly) or < 0 (value increased)
+. replace delta_raw = . if delta_raw > 1 | delta_raw < 0
+{txt}(5,563 real changes made, 5,563 to missing)
+r; t=0.00 23:59:59
+
+{com}. replace delta_raw = . if real_purchase_value <= 0
+{txt}(0 real changes made)
+r; t=0.00 23:59:59
+
+{com}. 
+. 
+. * Define Age Groups (0-1, 2-3, 4-5, 6-10, 10+)
+. *This is mentioned in the methodology and one of the advancement from previous years
+. 
+. gen age_group = .
+{txt}(34,340 missing values generated)
+r; t=0.00 23:59:59
+
+{com}. replace age_group = 1 if q06_05a <= 1           
+{txt}(9,751 real changes made)
+r; t=0.02 23:59:59
+
+{com}. replace age_group = 2 if q06_05a >= 2 & q06_05a <= 3
+{txt}(10,517 real changes made)
+r; t=0.01 23:59:59
+
+{com}. replace age_group = 3 if q06_05a >= 4 & q06_05a <= 5
+{txt}(6,038 real changes made)
+r; t=0.00 23:59:59
+
+{com}. replace age_group = 4 if q06_05a >= 6 & q06_05a <= 10
+{txt}(5,942 real changes made)
+r; t=0.00 23:59:59
+
+{com}. replace age_group = 5 if q06_05a > 10
+{txt}(2,092 real changes made)
+r; t=0.00 23:59:59
+
+{com}. 
+. bysort s06c_code age_group: egen median_delta = median(delta_raw)
+{txt}r; t=0.06 23:59:59
+
+{com}. 
+. * Fill missing medians with item's overall median, then global default (0.2)
+. bysort s06c_code: egen global_item_median = median(delta_raw)
+{txt}r; t=0.04 23:59:59
+
+{com}. replace median_delta = global_item_median if median_delta == .
+{txt}(0 real changes made)
+r; t=0.00 23:59:59
+
+{com}. replace median_delta = 0.20 if median_delta == .
+{txt}(0 real changes made)
+r; t=0.00 23:59:59
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 4. CALCULATE USER COST (CONSUMPTION FLOW)
+. *------------------------------------------------------------------------------*
+. 
+. * Formula: UserCost = (CurrentValue * Qty) * ( (r + delta) / (1 - delta) )
+. **# Real Interest Rate = 0.05 (Update Later after looking the actual figures)
+. scalar r_real = 0.05
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+. gen current_val_total = q06_07 * q06_04
+{txt}r; t=0.00 23:59:59
+
+{com}. gen user_cost_item = current_val_total * ( (r_real + median_delta) / (1 - median_delta) )
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+. * Handle missings
+. replace user_cost_item = 0 if user_cost_item == .
+{txt}(0 real changes made)
+r; t=0.00 23:59:59
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * 5. AGGREGATE TO HOUSEHOLD LEVEL
+. *------------------------------------------------------------------------------*
+. collapse (sum) durables_flow_annual = user_cost_item, by(psu_number hh_number)
+{res}{txt}r; t=0.04 23:59:59
+
+{com}. 
+. label var durables_flow_annual "Annual Consumption Flow from Durables (User Cost)"
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+. * Check stats
+. summarize durables_flow_annual, detail
+
+      {txt}Annual Consumption Flow from Durables (User Cost)
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res} 176.1539              0
+{txt} 5%    {res} 556.4413              0
+{txt}10%    {res} 1404.155              0       {txt}Obs         {res}      9,376
+{txt}25%    {res} 5484.135              0       {txt}Sum of wgt. {res}      9,376
+
+{txt}50%    {res} 18822.76                      {txt}Mean          {res} 64261.05
+                        {txt}Largest       Std. dev.     {res} 187061.4
+{txt}75%    {res} 57721.94        3533006
+{txt}90%    {res} 142375.9        4296198       {txt}Variance      {res} 3.50e+10
+{txt}95%    {res} 235812.8        4969413       {txt}Skewness      {res} 13.83434
+{txt}99%    {res} 748435.2        6890870       {txt}Kurtosis      {res} 331.5277
+{txt}r; t=0.01 23:59:59
+
+{com}. 
+. * Save
+. save "$data_tmp/agg_durables_final.dta", replace
+{txt}{p 0 4 2}
+(file {bf}
+C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/4_tmp/agg_durables_final.dta{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/4_tmp/agg_durables_final.dta{rm}
+saved
+{p_end}
+r; t=0.00 23:59:59
+
+{com}. 
+. display "SUCCESS: Durables Flow (Section 3.2.2) Complete."
+{res}SUCCESS: Durables Flow (Section 3.2.2) Complete.
+{txt}r; t=0.00 23:59:59
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.43 23:59:59
+{com}. do "C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\non-food.do"
+{err}{p 0 4 2}
+file {bf:{err}C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\non-food.do}
+not found
+{p_end}
+{txt}{search r(601), local:r(601);} t=0.02 0:00:14
+
+{com}. do "C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\non-food.do"
+{err}{p 0 4 2}
+file {bf:{err}C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\non-food.do}
+not found
+{p_end}
+{txt}{search r(601), local:r(601);} t=0.01 0:00:26
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *               Cleaning for consumption in NLSS                                           *
+. /*
+> 
+>         Author:                         Arpan and Kapil
+>         Date created:           7th Feb 2026
+>         Date updated:           7th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. 
+. {c -(}
+. *------------------------------------------------------------------------------*
+. **#                                                     STATA setups                                                                        
+. *------------------------------------------------------------------------------*
+. clear
+{txt}r; t=0.00 0:01:25
+{com}. cap clear frames
+{txt}r; t=0.00 0:01:25
+{com}. set more off
+{txt}r; t=0.00 0:01:25
+{com}. set rmsg on
+{txt}r; t=0.00 0:01:25
+{com}. local dofilename "01_data_merge"
+{txt}r; t=0.00 0:01:25
+{com}. cap log close
+{smcl}
+{com}{sf}{ul off}

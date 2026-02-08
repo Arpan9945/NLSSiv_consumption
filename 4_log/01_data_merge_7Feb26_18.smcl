@@ -1,0 +1,541 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/4_log/01_data_merge_7Feb26_18.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 7 Feb 2026, 18:11:22
+{txt}r; t=0.00 18:11:22
+{com}.         
+. {c )-}       
+{txt}r; t=0.00 18:11:22
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. 
+. use "$data_raw\S01.dta", clear 
+{txt}(NLSS04_DICT)
+r; t=0.00 18:11:22
+
+{com}. keep psu_number hh_number idcode q01_07
+{txt}r; t=0.00 18:11:22
+
+{com}. 
+. 
+. preserve
+{txt}r; t=0.00 18:11:22
+
+{com}.         use "$data_raw\S02.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 18:11:22
+
+{com}. 
+.         rename  q02_30 electricity
+{res}{txt}r; t=0.00 18:11:22
+
+{com}.         rename  q02_31_a2 landline_exp 
+{res}{txt}r; t=0.00 18:11:22
+
+{com}.         rename q02_31_b2 tv_exp 
+{res}{txt}r; t=0.00 18:11:22
+
+{com}.         rename q02_31_c2 internet_exp
+{res}{txt}r; t=0.00 18:11:22
+
+{com}.         
+.         gen totalexp = electricity + landline_exp + tv_exp + internet_exp
+{txt}(9,483 missing values generated)
+r; t=0.00 18:11:22
+
+{com}.         
+.         tempfile sec_02
+{txt}r; t=0.00 18:11:22
+
+{com}.         save `sec_02', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000002.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000002.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 18:11:22
+
+{com}. restore
+{txt}r; t=0.02 18:11:22
+
+{com}. 
+. merge m:1 psu_number hh_number using `sec_02', keepusing(electricity landline_exp tv_exp internet_exp)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}          46,870{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 18:11:22
+
+{com}. 
+. /*
+> Individuals are merged with their household's utility expenses
+> 
+>  Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                             0
+>     Matched                            46,870  (_merge==3)
+>     -----------------------------------------
+> */
+. assert _merge == 3
+{txt}r; t=0.00 18:11:22
+
+{com}. drop _merge
+{txt}r; t=0.00 18:11:22
+
+{com}. 
+. 
+. 
+. 
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 18:11:22
+
+{com}. display "STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)"
+{res}STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)
+{txt}r; t=0.00 18:11:22
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 18:11:22
+
+{com}. 
+. preserve
+{txt}r; t=0.00 18:11:22
+
+{com}.         * Load Section 6A (Non-Food Non-Durable)
+.         use "$data_raw/S06A.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.08 18:11:22
+
+{com}. 
+. 
+.         **# 2. Exclusions (Crucial Step)
+.         *------------------------------------------------------------------------------*
+.         * We DROP items that are:
+.         * 1. Major Durables (Vehicles, Appliances, Furniture) -> These go to Sec 3.2.2 (User Cost)
+.         * 2. Gambling/Lumpy/Investments -> Excluded entirely
+. 
+.         local excluded_items 0511 0512 0531 0532 0551 0711 0712 0713 0714 0911 0912 0913 0914 0922 0932 0943
+{txt}r; t=0.00 18:11:22
+
+{com}. 
+.         foreach code of local excluded_items{c -(}
+{txt}  2{com}.                 drop if s06a_code == `code'
+{txt}  3{com}.         {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.71 18:11:23
+
+{com}. 
+.         replace q06_02a_a = 0 if q06_02a_a == .
+{txt}(688,190 real changes made)
+r; t=0.05 18:11:23
+
+{com}.         replace q06_02a_b = 0 if q06_02a_b == .
+{txt}(688,190 real changes made)
+r; t=0.05 18:11:23
+
+{com}. 
+.         *Creating Annualized 30-day value
+.         gen annualized_30 = q06_02a_b * 12
+{txt}r; t=0.03 18:11:23
+
+{com}. 
+.         bysort s06a_code: egen median_30_ann = median(annualized_30) if annualized_30 > 0
+{txt}(888,007 missing values generated)
+r; t=1.39 18:11:24
+
+{com}.         bysort s06a_code: egen median_12 = median(q06_02a_a) if q06_02a_a > 0
+{txt}(688,190 missing values generated)
+r; t=1.19 18:11:25
+
+{com}. 
+.         replace median_30_ann = 0 if median_30_ann == .
+{txt}(888,007 real changes made)
+r; t=0.06 18:11:25
+
+{com}.         replace median_12 = 0 if median_12 == .
+{txt}(688,190 real changes made)
+r; t=0.04 18:11:25
+
+{com}. 
+.         gen pct_diff = abs(median_30_ann - median_12) / median_12 if median_12 > 0
+{txt}(688,190 missing values generated)
+r; t=0.04 18:11:25
+
+{com}. 
+.         gen is_regular = 0
+{txt}r; t=0.02 18:11:25
+
+{com}.         replace is_regular = 1 if pct_diff <= 0.20 & pct_diff != .
+{txt}(75,761 real changes made)
+r; t=0.05 18:11:25
+
+{com}. 
+.         *Calculate Final Item Expenditure
+.         gen final_item_exp = .
+{txt}(1,075,200 missing values generated)
+r; t=0.03 18:11:25
+
+{com}. 
+.         replace final_item_exp = annualized_30 if is_regular == 1
+{txt}(75,761 real changes made)
+r; t=0.03 18:11:25
+
+{com}.         * (Fallback: use 12-month if 30-day is 0/missing but 12-month exists)
+.         replace final_item_exp = q06_02a_a if is_regular == 1 & (final_item_exp == 0 | final_item_exp == .)
+{txt}(0 real changes made)
+r; t=0.05 18:11:26
+
+{com}. 
+.         replace final_item_exp = q06_02a_a if is_regular == 0
+{txt}(999,439 real changes made)
+r; t=0.04 18:11:26
+
+{com}.         replace final_item_exp = annualized_30 if is_regular == 0 & (final_item_exp == 0 | final_item_exp == .)
+{txt}(0 real changes made)
+r; t=0.06 18:11:26
+
+{com}. 
+.         collapse (sum) nonfood_nondurable_annual = final_item_exp, by(psu_number hh_number)
+{res}{txt}r; t=0.24 18:11:26
+
+{com}. 
+.         label var nonfood_nondurable_annual "Annual Non-Food Non-Durable Exp (S06A)"
+{txt}r; t=0.00 18:11:26
+
+{com}. 
+.         summarize nonfood_nondurable_annual, detail
+
+           {txt}Annual Non-Food Non-Durable Exp (S06A)
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}    27870            700
+{txt} 5%    {res}    59105           2620
+{txt}10%    {res}    85425           6040       {txt}Obs         {res}      9,600
+{txt}25%    {res}   145555           7400       {txt}Sum of wgt. {res}      9,600
+
+{txt}50%    {res}   255840                      {txt}Mean          {res} 367677.6
+                        {txt}Largest       Std. dev.     {res}   407683
+{txt}75%    {res}   442435        5168600
+{txt}90%    {res} 749877.5        5175170       {txt}Variance      {res} 1.66e+11
+{txt}95%    {res}  1015970        8161010       {txt}Skewness      {res} 5.241388
+{txt}99%    {res}  2000095        8188120       {txt}Kurtosis      {res}  56.9711
+{txt}r; t=0.00 18:11:26
+
+{com}. 
+.         save `sec6a_agg', replace
+{err}invalid file specification
+{txt}{search r(198), local:r(198);} t=0.00 18:11:26
+
+end of do-file
+
+{search r(198), local:r(198);} t=4.23 18:11:26
+
+{com}. describe using "$data_raw/S07.dta"   // Check Education
+{err}invalid '/' 
+{txt}{search r(198), local:r(198);} t=0.02 19:20:44
+
+{com}. 
+. describe using "$data_raw/S02.dta"   // Check Housing/Utilities
+{err}invalid '/' 
+{txt}{search r(198), local:r(198);} t=0.00 19:20:44
+
+{com}. describe using "$data_raw/S07.dta"   
+
+{txt}Contains data                                 {res}NLSS04_DICT
+{txt} Observations:{res}        46,870                  7 Jul 2024 21:36
+{txt}    Variables:{res}            30                  
+{txt}{hline}
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:psu_number     }{txt}{bind: int     }{bind:{txt}%4.0f     }{space 1}{bind:         }{bind:  }{res}{res}PSU NUMBER{p_end}
+{p 0 48}{bind:hh_number      }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}HH NUMBER{p_end}
+{p 0 48}{bind:idcode         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}IDENTIFICATION CODE{p_end}
+{p 0 48}{bind:q07_01         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}ID CODE OF RESPONDENT{p_end}
+{p 0 48}{bind:q07_02         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q07_02_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Can you read?{p_end}
+{p 0 48}{bind:q07_03         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q07_03_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Can you write?{p_end}
+{p 0 48}{bind:q07_04         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q07_04_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}INTERVIEWER: ASK EACH PERSON ABOUT THEIR EDUCATIONAL BACKGROUND, AND CODE THEIR {p_end}
+{p 0 48}{bind:q07_05         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_05_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What type of school / college did you last attend?{p_end}
+{p 0 48}{bind:q07_06         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_06_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What was the highest level that you completed?{p_end}
+{p 0 48}{bind:q07_07         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_07_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What was your area of ​​study?{p_end}
+{p 0 48}{bind:q07_08         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_08_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Why did you leave school / college?{p_end}
+{p 0 48}{bind:q07_09         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_09_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}How many years did it take you to complete basic education (class 8) excluding t{p_end}
+{p 0 48}{bind:q07_10         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_10_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}How many year did it take you to complete class 1 to 10 ?{p_end}
+{p 0 48}{bind:q07_11         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_11_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What type of school/college are you currently attending?{p_end}
+{p 0 48}{bind:q07_12         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_12_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What was the highest level that you completed?{p_end}
+{p 0 48}{bind:q07_13         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_13_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What is your area of ​​study?{p_end}
+{p 0 48}{bind:q07_14         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{bind:         }{bind:  }{res}{res}How many days were you absent in school/college during the past 7 school days?{p_end}
+{p 0 48}{bind:q07_15         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q07_15_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Why were you absent from school some days?{p_end}
+{p 0 48}{bind:q07_16         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q07_16_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}How do you go to school/college?{p_end}
+{p 0 48}{bind:q07_17_a       }{txt}{bind: long    }{bind:{txt}%7.0f     }{space 1}{bind:         }{bind:  }{res}{res}How much has your household spent during the past 12 months for your schooling? {p_end}
+{p 0 48}{bind:q07_17_b       }{txt}{bind: long    }{bind:{txt}%7.0f     }{space 1}{bind:         }{bind:  }{res}{res}B Other fee (exams, admission, events, etc){p_end}
+{p 0 48}{bind:q07_17_c       }{txt}{bind: long    }{bind:{txt}%7.0f     }{space 1}{bind:         }{bind:  }{res}{res}C Uniform/school dress and shoes{p_end}
+{p 0 48}{bind:q07_17_d       }{txt}{bind: long    }{bind:{txt}%7.0f     }{space 1}{bind:         }{bind:  }{res}{res}D Textbook / Supplies{p_end}
+{p 0 48}{bind:q07_17_e       }{txt}{bind: long    }{bind:{txt}%7.0f     }{space 1}{bind:         }{bind:  }{res}{res}E Transportation{p_end}
+{p 0 48}{bind:q07_17_f       }{txt}{bind: long    }{bind:{txt}%7.0f     }{space 1}{bind:         }{bind:  }{res}{res}F Private tuition{p_end}
+{p 0 48}{bind:q07_17_g       }{txt}{bind: long    }{bind:{txt}%7.0f     }{space 1}{bind:         }{bind:  }{res}{res}G Others (snacks, tea, etc){p_end}
+{p 0 48}{bind:q07_18         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q07_18_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Did you receive a scholarship to help pay for your educational expenses?{p_end}
+{p 0 48}{bind:q07_19         }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}How much did you receive over the past 12 months? RUPEES{p_end}
+{p 0 48}{bind:q07_20         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q07_20_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}How many years did it take you to complete basic education (class 8) excluding t{p_end}
+{p 0 48}{bind:q07_21         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}How many years did  it take you to complete  class 10?{p_end}
+{txt}{hline}
+Sorted by: {res}psu_number  hh_number  
+{txt}r; t=0.06 19:20:51
+
+{com}. 
+. describe using "$data_raw/S02.dta"
+
+{txt}Contains data                                 {res}NLSS04_DICT
+{txt} Observations:{res}         9,600                  7 Jul 2024 21:34
+{txt}    Variables:{res}            62                  
+{txt}{hline}
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:psu_number     }{txt}{bind: int     }{bind:{txt}%4.0f     }{space 1}{bind:         }{bind:  }{res}{res}PSU NUMBER{p_end}
+{p 0 48}{bind:hh_number      }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}HH NUMBER{p_end}
+{p 0 48}{bind:q02_00         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.00{c )-} ID OF RESPONDENT{p_end}
+{p 0 48}{bind:q02_01         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_01_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.01{c )-} Is this dwelling unit occupied by your household only?{p_end}
+{p 0 48}{bind:q02_02_a       }{txt}{bind: byte    }{bind:{txt}%3.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.02a{c )-} How many rooms does your household use? TOTAL{p_end}
+{p 0 48}{bind:q02_02_b       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.02b{c )-} kitchen{p_end}
+{p 0 48}{bind:q02_02_c       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.02c{c )-} Toilet / bathroom{p_end}
+{p 0 48}{bind:q02_02_d       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.02d{c )-} Bedrooms{p_end}
+{p 0 48}{bind:q02_02_e       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.02e{c )-} Living / dining rooms{p_end}
+{p 0 48}{bind:q02_02_f       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.02f{c )-} Business{p_end}
+{p 0 48}{bind:q02_02_g       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.02g{c )-} Mixed use{p_end}
+{p 0 48}{bind:q02_02_h       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.02h{c )-} other{p_end}
+{p 0 48}{bind:q02_03         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_03_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.03{c )-} Is there a kitchen garden?{p_end}
+{p 0 48}{bind:q02_04         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_04_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.04{c )-} MAIN CONSTRUCTION MATERIAL OF OUTSIDE WALLS{p_end}
+{p 0 48}{bind:q02_05         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_05_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.05{c )-} FOUNDATION OF DWELLING{p_end}
+{p 0 48}{bind:q02_06         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_06_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.06{c )-} MAIN MATERIAL ROOF IS MADE OF{p_end}
+{p 0 48}{bind:q02_07         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_07_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.07{c )-} MAIN MATERIAL FLOOR IS MADE OF{p_end}
+{p 0 48}{bind:q02_08         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_08_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.08_code{c )-} HOW BIG IS THE HOUSING PLOT? Unit{p_end}
+{p 0 48}{bind:q02_08_a       }{txt}{bind: byte    }{bind:{txt}%3.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.08_RB{c )-}{p_end}
+{p 0 48}{bind:q02_08_b       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.08_AK{c )-}{p_end}
+{p 0 48}{bind:q02_08_c       }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.08_PD{c )-}{p_end}
+{p 0 48}{bind:q02_09         }{txt}{bind: int     }{bind:{txt}%5.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.09{c )-} HOW BIG IS THE INSIDE OF THE DWELLING?{p_end}
+{p 0 48}{bind:q02_10         }{txt}{bind: int     }{bind:{txt}%4.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.10{c )-} Which year (BS) was the house that you are living built?{p_end}
+{p 0 48}{bind:q02_11         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_11_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.11{c )-} Is this dwelling yours?{p_end}
+{p 0 48}{bind:q02_12         }{txt}{bind: long    }{bind:{txt}%10.0f    }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.12{c )-} If you wanted to buy a dwelling just like this today, how much money woul{p_end}
+{p 0 48}{bind:q02_13         }{txt}{bind: long    }{bind:{txt}%10.0f    }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.13{c )-} If someone wanted to rent this dwelling today, how much money would they {p_end}
+{p 0 48}{bind:q02_14         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_14_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.14{c )-} Have you rented any part of your house ?{p_end}
+{p 0 48}{bind:q02_15         }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.15{c )-} How much do you receive for this as rent per month?{p_end}
+{p 0 48}{bind:q02_16         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_16_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.16{c )-} What is your present occupancy status?{p_end}
+{p 0 48}{bind:q02_17         }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.17{c )-} If someone wanted to rent this dwelling (only the unit occupied by the ho{p_end}
+{p 0 48}{bind:q02_18         }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.18{c )-} What is the rent per month? (cash plus value of in-kind payments){p_end}
+{p 0 48}{bind:q02_19         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_19_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.19{c )-} What is the main source of your drinking water?{p_end}
+{p 0 48}{bind:q02_20         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_20_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.20{c )-} What is the main source of water for other purposes (cooking, washing, et{p_end}
+{p 0 48}{bind:q02_21         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_21_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.21{c )-} Do you have water piped into your house?{p_end}
+{p 0 48}{bind:q02_22         }{txt}{bind: int     }{bind:{txt}%3.0f     }{space 1}{txt}Q02_22_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.22{c )-} How many hours per WEEK does your household have tap water? HRS{p_end}
+{p 0 48}{bind:q02_23         }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.23{c )-} How much did you pay for water over the last 12 months?{p_end}
+{p 0 48}{bind:q02_24         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_24_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.24{c )-} What type of sanitary system does your household have for liquid wastes?{p_end}
+{p 0 48}{bind:q02_25         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_25_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.25{c )-} How does your household dispose of its garbage mainly?{p_end}
+{p 0 48}{bind:q02_26         }{txt}{bind: int     }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.26{c )-} How much did your household pay for garbage disposal over the last month?{p_end}
+{p 0 48}{bind:q02_27         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_27_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.27{c )-} What type of toilet is used by your household?{p_end}
+{p 0 48}{bind:q02_28         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_28_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.28{c )-} What is the main source of lighting for your dwelling?{p_end}
+{p 0 48}{bind:q02_29         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_29_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.29{c )-} Does your household have electricity meter?{p_end}
+{p 0 48}{bind:q02_30         }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.30{c )-} How much did you spend on electricity over the past 12 months?{p_end}
+{p 0 48}{bind:q02_31_a1      }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_31_A1_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.31a1{c )-} Is Landline(PSTN line)?{p_end}
+{p 0 48}{bind:q02_31_a2      }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.31a2{c )-} Landline telephone expenditure RUPEES{p_end}
+{p 0 48}{bind:q02_31_b1      }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_31_B1_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.31b1{c )-} Is Cable/Satellite TV ?{p_end}
+{p 0 48}{bind:q02_31_b2      }{txt}{bind: int     }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.31b2{c )-} Cable/Satellite TV expenditure RUPEES{p_end}
+{p 0 48}{bind:q02_31_c1      }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_31_C1_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.31c1{c )-} have Internet ?{p_end}
+{p 0 48}{bind:q02_31_c2      }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.31c2{c )-} Internet expenditure RUPEES{p_end}
+{p 0 48}{bind:q02_32         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_32_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.32{c )-} What kind of fuel is most often used by your household for cooking?{p_end}
+{p 0 48}{bind:q02_33         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_33_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.33{c )-} What type of stove does your household mainly use for cooking?{p_end}
+{p 0 48}{bind:q02_34         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_34_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.34{c )-} Did household use firwood within last 12 months?{p_end}
+{p 0 48}{bind:q02_35_1       }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_35_1_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.35.1{c )-} Did your household use this firewood over the past 12 months?{p_end}
+{p 0 48}{bind:q02_35_1a      }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.35.1A{c )-} How much you paid for on firewood in Rupees : buying?{p_end}
+{p 0 48}{bind:q02_35_2       }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_35_2_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.35.2{c )-} Did your household use this firewood over the past 12 months?{p_end}
+{p 0 48}{bind:q02_35_2a      }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.35.2A{c )-} How much did you paid on firewood in Rupees :  own land ?{p_end}
+{p 0 48}{bind:q02_35_3       }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_35_3_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.35.3{c )-} Did your household use this firewood over the past 12 months?{p_end}
+{p 0 48}{bind:q02_35_3a      }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.35.3A{c )-} How much did you paid on firewood from in rupees : community forest ?{p_end}
+{p 0 48}{bind:q02_35_4       }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_35_4_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.35.4{c )-} Did your household use this firewood over the past 12 months?{p_end}
+{p 0 48}{bind:q02_35_4a      }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.35.4A{c )-} How much you paid on forewood from in rupees :government forest ?{p_end}
+{p 0 48}{bind:q02_35_5       }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q02_35_5_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}{c -(}2.35.5{c )-} Did your household use this firewood over the past 12 months?{p_end}
+{p 0 48}{bind:q02_35_5a      }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}{c -(}2.35.5A{c )-} How much you paid on firewood in rupees : Others source?{p_end}
+{txt}{hline}
+Sorted by: 
+r; t=0.00 19:20:52
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. use "$data_raw/S07.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.17 19:23:07
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.17 19:23:07
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. tempfile educ_s07_agg
+{txt}r; t=0.00 19:28:53
+
+{com}. 
+. preserve
+{txt}r; t=0.01 19:28:53
+
+{com}.     use "$data_raw/S07.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.01 19:28:53
+
+{com}. 
+.     * 1. Clean missing values for expenses (q07_17_a to q07_17_g)
+.     foreach var of varlist q07_17_a q07_17_b q07_17_c q07_17_d q07_17_e q07_17_f q07_17_g {c -(}
+{txt}  2{com}.         replace `var' = 0 if `var' == .
+{txt}  3{com}.     {c )-}
+{txt}(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+r; t=0.06 19:28:53
+
+{com}. 
+.     * 2. Calculate Total Education Expenditure per Person
+.     * a=Schooling, b=Other fees, c=Uniforms, d=Textbooks, e=Transport, f=Tuition, g=Others
+.     egen educ_individual_total = rowtotal(q07_17_a q07_17_b q07_17_c q07_17_d q07_17_e q07_17_f q07_17_g)
+{txt}r; t=0.07 19:28:53
+
+{com}. 
+.     * 3. Aggregate to Household Level
+.     collapse (sum) educ_s07_total = educ_individual_total, by(psu_number hh_number)
+{res}{txt}r; t=0.02 19:28:53
+
+{com}. 
+.     label var educ_s07_total "Total Education Exp (S07)"
+{txt}r; t=0.00 19:28:53
+
+{com}.     save `educ_s07_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 19:28:53
+
+{com}. restore
+{txt}r; t=0.00 19:28:53
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.17 19:28:53
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *               Cleaning for consumption in NLSS                                           *
+. /*
+> 
+>         Author:                         Arpan and Kapil
+>         Date created:           7th Feb 2026
+>         Date updated:           7th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. clear 
+{txt}r; t=0.01 19:28:59
+
+{com}. cap clear frames
+{txt}r; t=0.00 19:28:59
+
+{com}. set more off 
+{txt}r; t=0.00 19:28:59
+
+{com}. set rmsg on
+{txt}r; t=0.00 19:28:59
+
+{com}. local dofilename "01_class"
+{txt}r; t=0.00 19:28:59
+
+{com}. cap log close
+{smcl}
+{com}{sf}{ul off}

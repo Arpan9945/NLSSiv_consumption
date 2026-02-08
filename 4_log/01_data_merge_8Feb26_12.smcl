@@ -1,0 +1,1082 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/4_log/01_data_merge_8Feb26_12.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 8 Feb 2026, 12:57:47
+{txt}r; t=0.00 12:57:47
+{com}.         
+. {c )-}       
+{txt}r; t=0.01 12:57:47
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. 
+. 
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 12:57:47
+
+{com}. display "STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)"
+{res}STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)
+{txt}r; t=0.00 12:57:47
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 12:57:47
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 1: NON-FOOD NON-DURABLE (SECTION 6A) - STRICT EXCLUSIONS                *
+. *------------------------------------------------------------------------------*
+. 
+. tempfile sec6a_agg
+{txt}r; t=0.00 12:57:47
+
+{com}. 
+. preserve 
+{txt}r; t=0.00 12:57:47
+
+{com}.     use "$data_raw/S06A.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.21 12:57:47
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * A. DEFINE EXCLUSIONS (Based on Methodology Text)
+.     *--------------------------------------------------------------------------*
+.         
+.         gen is_header = mod(s06a_code, 10) == 0
+{txt}r; t=0.09 12:57:48
+
+{com}.     drop if is_header == 1
+{txt}(345,600 observations deleted)
+r; t=0.07 12:57:48
+
+{com}.     
+.     * 1. DURABLES (Investments/Assets)
+.     * Furniture, Vehicles, Electronics, etc.
+.     local durables 511 512 531 532 541 551 711 712 713 714 ///
+>                    911 912 913 914 922 932 943 1231
+{txt}r; t=0.00 12:57:48
+
+{com}. 
+.     * 2. HEALTH EXPENSES but included education as well from 0955 (Defensive Expenditure - Excluded per Methodology)
+.     * 1051 = Preventive health care
+.     * 1052 = Treatment care (medicines, admission)
+.     local health_excluded 1051 1052
+{txt}r; t=0.00 12:57:48
+
+{com}. 
+.     * 3. NON-CONSUMPTION & LUMPY EXPENDITURES
+.     * 1241 = Donations (Transfer out)
+.     * 1251 = Life Insurance (Savings/Investment)
+.     * 1252 = Non-life Insurance (often excluded)
+.     * 1262 = Banking fees (Often considered service, but can be financial cost. We KEEP this usually as a service fee, unless "Interest payments")
+.     * 1271 = Registration/Renewal Fees (Taxes/Levies - Excluded)
+.     * 1272 = Legal Expenses (Often lumpy/admin - Excluded)
+.     * 1273 = Marriage/Death/Birth functions (Lumpy Life Events - Excluded)
+.     local lumpy_excluded 1241 1251 1252 1271 1272 1273
+{txt}r; t=0.00 12:57:48
+
+{com}. 
+.     * APPLY EXCLUSIONS
+.     foreach code of local durables {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.84 12:57:49
+
+{com}.     foreach code of local health_excluded {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.11 12:57:49
+
+{com}.     foreach code of local lumpy_excluded {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.21 12:57:49
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * B. IDENTIFY EDUCATION (To be compared with S07 later)
+.     *--------------------------------------------------------------------------*
+.     * 1010-1040 = School Fees
+.     * 0955 = Academic Books
+.     * 1122 = Hostel Costs
+.     gen is_education_s06 = 0
+{txt}r; t=0.02 12:57:49
+
+{com}.     replace is_education_s06 = 1 if inlist(s06a_code, 1010, 1020, 1030, 1040, 0955, 1122)
+{txt}(19,200 real changes made)
+r; t=0.05 12:57:49
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * C. CLEANING & AGGREGATION
+.     *--------------------------------------------------------------------------*
+.     
+.     * Clean Missing Values
+.     replace q06_02a_b = 0 if q06_02a_b == .  // 30-day recall
+{txt}(445,872 real changes made)
+r; t=0.08 12:57:49
+
+{com}.     replace q06_02a_a = 0 if q06_02a_a == .  // 12-month recall
+{txt}(445,872 real changes made)
+r; t=0.06 12:57:49
+
+{com}. 
+.     * Calculate Annual Expenditure (Methodology 3.2.1)
+.     gen annualized_30 = q06_02a_b * 12
+{txt}r; t=0.08 12:57:49
+
+{com}.     
+.     * Calculate Medians
+.     bysort s06a_code: egen median_30_ann = median(annualized_30) if annualized_30 > 0
+{txt}(551,351 missing values generated)
+r; t=0.86 12:57:50
+
+{com}.     bysort s06a_code: egen median_12 = median(q06_02a_a) if q06_02a_a > 0
+{txt}(445,872 missing values generated)
+r; t=0.74 12:57:51
+
+{com}.     
+.     replace median_30_ann = 0 if median_30_ann == .
+{txt}(551,351 real changes made)
+r; t=0.04 12:57:51
+
+{com}.     replace median_12 = 0 if median_12 == .
+{txt}(445,872 real changes made)
+r; t=0.06 12:57:51
+
+{com}. 
+.     * Check Regularity (Diff <= 20%)
+.     gen pct_diff = abs(median_30_ann - median_12) / median_12 if median_12 > 0
+{txt}(445,872 missing values generated)
+r; t=0.05 12:57:51
+
+{com}.     gen is_regular = 0
+{txt}r; t=0.03 12:57:51
+
+{com}.     replace is_regular = 1 if pct_diff <= 0.20 & pct_diff != .
+{txt}(35,564 real changes made)
+r; t=0.04 12:57:51
+
+{com}. 
+.     * Select Final Amount
+.     gen final_item_exp = .
+{txt}(633,600 missing values generated)
+r; t=0.03 12:57:51
+
+{com}.     replace final_item_exp = annualized_30 if is_regular == 1
+{txt}(35,564 real changes made)
+r; t=0.03 12:57:51
+
+{com}.     replace final_item_exp = q06_02a_a if is_regular == 1 & final_item_exp == 0
+{txt}(0 real changes made)
+r; t=0.10 12:57:51
+
+{com}.     replace final_item_exp = q06_02a_a if is_regular == 0
+{txt}(598,036 real changes made)
+r; t=0.05 12:57:51
+
+{com}.     replace final_item_exp = annualized_30 if is_regular == 0 & final_item_exp == 0
+{txt}(0 real changes made)
+r; t=0.08 12:57:51
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * D. COLLAPSE TO HOUSEHOLD LEVEL (Splitting Education vs Other)
+.     *--------------------------------------------------------------------------*
+.     
+.     * Sum separately for Education and Non-Education
+.     collapse (sum) educ_s06_total = final_item_exp ///
+>                    nonfood_s06_other = final_item_exp, ///
+>              by(psu_number hh_number is_education_s06)
+{res}{txt}r; t=0.31 12:57:52
+
+{com}.              
+.     * Flatten to 1 row per HH
+.     replace educ_s06_total = 0 if is_education_s06 == 0
+{txt}(9,600 real changes made)
+r; t=0.00 12:57:52
+
+{com}.     replace nonfood_s06_other = 0 if is_education_s06 == 1
+{txt}(4,514 real changes made)
+r; t=0.00 12:57:52
+
+{com}.     
+.     collapse (sum) educ_s06_total nonfood_s06_other, by(psu_number hh_number)
+{res}{txt}r; t=0.01 12:57:52
+
+{com}. 
+.     label var educ_s06_total "Education Exp (Section 6A)"
+{txt}r; t=0.00 12:57:52
+
+{com}.     label var nonfood_s06_other "Other Non-Food Exp (S06A) - Excl Health/Taxes"
+{txt}r; t=0.00 12:57:52
+
+{com}. 
+.     save `sec6a_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 12:57:52
+
+{com}. restore
+{txt}r; t=0.00 12:57:52
+
+{com}. display "Section 6A Finalized (Health & Lumpy Items Excluded)."
+{res}Section 6A Finalized (Health & Lumpy Items Excluded).
+{txt}r; t=0.00 12:57:52
+
+{com}. 
+. 
+. 
+. 
+. 
+. 
+. 
+. *------------------------------------------------------------------------------*
+. * STEP 2: EDUCATION (SECTION 7)                                                *
+. *------------------------------------------------------------------------------*
+. tempfile educ_s07_agg
+{txt}r; t=0.00 12:57:52
+
+{com}. preserve
+{txt}r; t=0.00 12:57:52
+
+{com}.     use "$data_raw/S07.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 12:57:52
+
+{com}.     foreach var of varlist q07_17_a-q07_17_g {c -(}
+{txt}  2{com}.         replace `var' = 0 if `var' == .
+{txt}  3{com}.     {c )-}
+{txt}(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+r; t=0.03 12:57:52
+
+{com}.     egen educ_individual_total = rowtotal(q07_17_a-q07_17_g)
+{txt}r; t=0.03 12:57:52
+
+{com}.     collapse (sum) educ_s07_total = educ_individual_total, by(psu_number hh_number)
+{res}{txt}r; t=0.02 12:57:52
+
+{com}.     save `educ_s07_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000003.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000003.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 12:57:52
+
+{com}. restore
+{txt}r; t=0.00 12:57:52
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 3: UTILITIES (SECTION 2)                                                *
+. *------------------------------------------------------------------------------*
+. tempfile util_agg
+{txt}r; t=0.00 12:57:52
+
+{com}. preserve
+{txt}r; t=0.00 12:57:52
+
+{com}.     use "$data_raw/S02.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 12:57:52
+
+{com}.     
+.     * Clean missing
+.     replace q02_23 = 0 if q02_23 == .   // Water (Annual)
+{txt}(1 real change made)
+r; t=0.00 12:57:52
+
+{com}.     replace q02_26 = 0 if q02_26 == .   // Garbage (Monthly)
+{txt}(7,381 real changes made)
+r; t=0.00 12:57:52
+
+{com}.     replace q02_30 = 0 if q02_30 == .   // Electricity (Annual)
+{txt}(0 real changes made)
+r; t=0.00 12:57:52
+
+{com}.     replace q02_31_a2 = 0 if q02_31_a2 == . // Landline (Annual)
+{txt}(9,430 real changes made)
+r; t=0.00 12:57:52
+
+{com}. 
+.     * Calculate Utilities (Annualize Garbage)
+.     gen utilities_annual = q02_23 + (q02_26 * 12) + q02_30 + q02_31_a2
+{txt}r; t=0.00 12:57:52
+
+{com}.     
+.     collapse (sum) utilities_annual, by(psu_number hh_number)
+{res}{txt}r; t=0.09 12:57:52
+
+{com}.     save `util_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000005.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000005.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 12:57:52
+
+{com}. restore
+{txt}r; t=0.00 12:57:52
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 4: FINAL MERGE                                                          *
+. *------------------------------------------------------------------------------*
+. use `sec6a_agg', clear
+{txt}(NLSS04_DICT)
+r; t=0.00 12:57:52
+
+{com}. 
+. * Merge S07 (Education)
+. merge 1:1 psu_number hh_number using `educ_s07_agg'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 12:57:52
+
+{com}. drop _merge
+{txt}r; t=0.00 12:57:52
+
+{com}. replace educ_s07_total = 0 if educ_s07_total == .
+{txt}(0 real changes made)
+r; t=0.00 12:57:52
+
+{com}. 
+. * Merge S02 (Utilities)
+. merge 1:1 psu_number hh_number using `util_agg'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 12:57:52
+
+{com}. drop _merge
+{txt}r; t=0.00 12:57:52
+
+{com}. replace utilities_annual = 0 if utilities_annual == .
+{txt}(0 real changes made)
+r; t=0.00 12:57:52
+
+{com}. 
+. * COMPUTE FINAL AGGREGATES
+. * 1. Final Education = Max(Section 6A, Section 7)
+. gen educ_final = max(educ_s06_total, educ_s07_total)
+{txt}r; t=0.00 12:57:52
+
+{com}. 
+. * 2. Final Non-Food Non-Durable Aggregate
+. * Note: Health is EXCLUDED. Taxes are EXCLUDED.
+. gen agg_nonfood_nondurable = nonfood_s06_other + educ_final + utilities_annual
+{txt}r; t=0.00 12:57:52
+
+{com}. 
+. label var agg_nonfood_nondurable "Final Non-Food Non-Durable Aggregate (Annual)"
+{txt}r; t=0.00 12:57:52
+
+{com}. 
+. * Check
+. summarize agg_nonfood_nondurable, detail
+
+        {txt}Final Non-Food Non-Durable Aggregate (Annual)
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}     8540            350
+{txt} 5%    {res}    17895            600
+{txt}10%    {res}    25530           1010       {txt}Obs         {res}      9,600
+{txt}25%    {res}    45900           1310       {txt}Sum of wgt. {res}      9,600
+
+{txt}50%    {res}    82578                      {txt}Mean          {res} 118581.6
+                        {txt}Largest       Std. dev.     {res}   125260
+{txt}75%    {res}   145030        1578490
+{txt}90%    {res} 246287.5        1664420       {txt}Variance      {res} 1.57e+10
+{txt}95%    {res} 343092.5        1670900       {txt}Skewness      {res} 3.817358
+{txt}99%    {res}   613000        1726600       {txt}Kurtosis      {res} 28.55472
+{txt}r; t=0.01 12:57:52
+
+{com}. 
+. * Save
+. save "$data_tmp/agg_nonfood_nondurable_final.dta", replace
+{txt}{p 0 4 2}
+file {bf}
+C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/4_tmp/agg_nonfood_nondurable_final.dta{rm}
+saved
+{p_end}
+r; t=0.03 12:57:52
+
+{com}. 
+. 
+. 
+. 
+. 
+{txt}end of do-file
+
+r; t=4.53 12:57:52
+{com}. do "C:\Users\Arpan Acharya\OneDrive - HERD\Documents\Personal\CIH-project\2_prep\final-agg.do"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 4: FINAL AGGREGATION (MASTER MERGE)                                     *
+. *------------------------------------------------------------------------------*
+. 
+. * 1. START WITH FOOD AGGREGATE
+. use "$data_tmp/agg_food_final.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 12:57:57
+
+{com}. 
+. * 2. MERGE NON-FOOD (NON-DURABLE)
+. merge 1:1 psu_number hh_number using "$data_tmp/agg_nonfood_nondurable_final.dta"
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 12:57:57
+
+{com}. drop if _merge == 2 // Should not happen, but safety check
+{txt}(0 observations deleted)
+r; t=0.00 12:57:57
+
+{com}. drop _merge
+{txt}r; t=0.00 12:57:57
+
+{com}. replace agg_nonfood_nondurable = 0 if agg_nonfood_nondurable == .
+{txt}(0 real changes made)
+r; t=0.00 12:57:57
+
+{com}. 
+. * 3. MERGE HOUSING (RENT + UTILITIES)
+. merge 1:1 psu_number hh_number using "$data_tmp/agg_housing_final.dta"
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.00 12:57:57
+
+{com}. drop if _merge == 2
+{txt}(0 observations deleted)
+r; t=0.00 12:57:57
+
+{com}. drop _merge
+{txt}r; t=0.00 12:57:57
+
+{com}. replace housing_aggregate_annual = 0 if housing_aggregate_annual == .
+{txt}(0 real changes made)
+r; t=0.00 12:57:57
+
+{com}. 
+. * 4. MERGE DURABLES FLOW
+. merge 1:1 psu_number hh_number using "$data_tmp/agg_durables_final.dta"
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}             224
+{txt}{col 9}from master{col 30}{res}             224{txt}  (_merge==1)
+{col 9}from using{col 30}{res}               0{txt}  (_merge==2)
+
+{col 5}Matched{col 30}{res}           9,376{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.00 12:57:57
+
+{com}. drop if _merge == 2
+{txt}(0 observations deleted)
+r; t=0.00 12:57:57
+
+{com}. drop _merge
+{txt}r; t=0.00 12:57:57
+
+{com}. replace durables_flow_annual = 0 if durables_flow_annual == .
+{txt}(224 real changes made)
+r; t=0.00 12:57:57
+
+{com}. 
+. * 5. MERGE POVERTY LINE & HH SIZE (FROM OFFICIAL FILE)
+. * We need hhsize to calculate Per Capita, and the official weights.
+. merge 1:1 psu_number hh_number using "$data_raw/poverty.dta", keepusing(hhsize hhs_wt pline domain ad_4 paasche)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 12:57:57
+
+{com}. keep if _merge == 3
+{txt}(0 observations deleted)
+r; t=0.00 12:57:57
+
+{com}. drop _merge
+{txt}r; t=0.00 12:57:57
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 5: CALCULATE TOTAL CONSUMPTION (NOMINAL)                                *
+. *------------------------------------------------------------------------------*
+. 
+. * Total Nominal Household Consumption
+. gen total_consumption_nominal = food_aggregate_annual + ///
+>                                 agg_nonfood_nondurable + ///
+>                                 housing_aggregate_annual + ///
+>                                 durables_flow_annual
+{txt}r; t=0.00 12:57:57
+
+{com}. 
+. label var total_consumption_nominal "Total Annual Nominal HH Consumption"
+{txt}r; t=0.00 12:57:57
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 6: CALCULATE PER CAPITA CONSUMPTION (PCEP)                              *
+. *------------------------------------------------------------------------------*
+. 
+. * Nominal Per Capita Consumption (NPR per person per year)
+. gen pcep_nominal = total_consumption_nominal / hhsize
+{txt}r; t=0.00 12:57:57
+
+{com}. label var pcep_nominal "Per Capita Nominal Consumption"
+{txt}r; t=0.00 12:57:57
+
+{com}. 
+. 
+. 
+. * Save Final Analytical File
+. save "$data_tmp/final_consumption_aggregate.dta", replace
+{txt}{p 0 4 2}
+file {bf}
+C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/4_tmp/final_consumption_aggregate.dta{rm}
+saved
+{p_end}
+r; t=0.03 12:57:57
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.08 12:57:57
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. summarize pcep_nominal [aw=hhs_wt]
+
+{txt}    Variable {c |}     Obs      Weight        Mean   Std. dev.       Min        Max
+{hline 13}{c +}{hline 65}
+pcep_nominal {c |}{res}   9,600  7185102.66    124670.6   109892.8   12630.83    2137973
+{txt}r; t=0.00 12:58:03
+
+{com}. * Generate Per Capita components
+. gen pcep_food      = food_aggregate_annual / hhsize
+{txt}r; t=0.00 12:58:03
+
+{com}. gen pcep_nonfood   = agg_nonfood_nondurable / hhsize
+{txt}r; t=0.00 12:58:03
+
+{com}. gen pcep_housing   = housing_aggregate_annual / hhsize
+{txt}r; t=0.00 12:58:03
+
+{com}. gen pcep_durables  = durables_flow_annual / hhsize
+{txt}r; t=0.01 12:58:03
+
+{com}. 
+. * Check Weighted Means
+. display "----------------------------------------------------"
+{res}----------------------------------------------------
+{txt}r; t=0.00 12:58:03
+
+{com}. display "WEIGHTED MEANS (COMPARED TO EXPECTATIONS)"
+{res}WEIGHTED MEANS (COMPARED TO EXPECTATIONS)
+{txt}r; t=0.00 12:58:03
+
+{com}. summarize pcep_food [aw=hhs_wt]
+
+{txt}    Variable {c |}     Obs      Weight        Mean   Std. dev.       Min        Max
+{hline 13}{c +}{hline 65}
+{space 3}pcep_food {c |}{res}   9,600  7185102.66    61673.84   38262.05    8497.68   598630.3
+{txt}r; t=0.00 12:58:03
+
+{com}. summarize pcep_nonfood [aw=hhs_wt]
+
+{txt}    Variable {c |}     Obs      Weight        Mean   Std. dev.       Min        Max
+{hline 13}{c +}{hline 65}
+pcep_nonfood {c |}{res}   9,600  7185102.66    35581.35   37748.16        300     540450
+{txt}r; t=0.00 12:58:03
+
+{com}. summarize pcep_housing [aw=hhs_wt]
+
+{txt}    Variable {c |}     Obs      Weight        Mean   Std. dev.       Min        Max
+{hline 13}{c +}{hline 65}
+pcep_housing {c |}{res}   9,600  7185102.66    9531.352   18884.79          0     253084
+{txt}r; t=0.00 12:58:03
+
+{com}. summarize pcep_durables [aw=hhs_wt]
+
+{txt}    Variable {c |}     Obs      Weight        Mean   Std. dev.       Min        Max
+{hline 13}{c +}{hline 65}
+pcep_durab~s {c |}{res}   9,600  7185102.66    17884.05   54193.76          0    1703147
+{txt}r; t=0.00 12:58:03
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.02 12:58:03
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *           Creating Tables                                        *
+. /*
+> 
+>         Author:                         Arpan and Kapil
+>         Date created:           7th Feb 2026
+>         Date updated:           8th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. use "poverty.dta", clear
+{err}{p 0 4 2}
+file {bf:{err}poverty.dta}
+not found
+{p_end}
+{txt}{search r(601), local:r(601);} t=0.00 14:23:11
+
+end of do-file
+
+{search r(601), local:r(601);} t=0.02 14:23:11
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *           Creating Tables                                        *
+. /*
+> 
+>         Author:                         Arpan and Kapil
+>         Date created:           7th Feb 2026
+>         Date updated:           8th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. use "$data_raw/poverty.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.07 14:23:27
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.09 14:23:27
+{com}. de
+
+{txt}Contains data from {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/1_raw/poverty.dta
+{txt} Observations:{res}         9,600                  NLSS04_DICT
+{txt}    Variables:{res}            17                  7 Jul 2024 21:34
+{txt}{hline}
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:psu_number     }{txt}{bind: int     }{bind:{txt}%4.0f     }{space 1}{bind:         }{bind:  }{res}{res}PSU NUMBER{p_end}
+{p 0 48}{bind:hh_number      }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}HH NUMBER{p_end}
+{p 0 48}{bind:prov           }{txt}{bind: byte    }{bind:{txt}%12.0g    }{space 1}{bind:prov_lab }{bind:  }{res}{res}Province{p_end}
+{p 0 48}{bind:domain         }{txt}{bind: byte    }{bind:{txt}%35.0g    }{space 1}{txt}domainlab{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Analytical Domain{p_end}
+{p 0 48}{bind:hhsize         }{txt}{bind: byte    }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}Household size{p_end}
+{p 0 48}{bind:hhs_wt         }{txt}{bind: float   }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}base household weight (adjusted for census 2021 final count of Households){p_end}
+{p 0 48}{bind:ind_wt         }{txt}{bind: float   }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}base individual weight (base adjusted hh weight x household size){p_end}
+{p 0 48}{bind:ad_4           }{txt}{bind: byte    }{bind:{txt}%11.0g    }{space 1}{bind:ad_4lab  }{bind:  }{res}{res}Urban/rural/ktm_urban{p_end}
+{p 0 48}{bind:paasche        }{txt}{bind: double  }{bind:{txt}%10.0g    }{space 1}{bind:         }{bind:  }{res}{res}Paasche index -- food items{p_end}
+{p 0 48}{bind:pcep_food      }{txt}{bind: double  }{bind:{txt}%10.0g    }{space 1}{bind:         }{bind:  }{res}{res}Paasche-deflated per capita food expenditures (NRP/year){p_end}
+{p 0 48}{bind:pcep_nonfood   }{txt}{bind: float   }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}Spatially-deflated per capita nonfood expenditures (NPR/year){p_end}
+{p 0 48}{bind:pcep           }{txt}{bind: float   }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}Spatially-deflated per capita expenditures (NRP/year){p_end}
+{p 0 48}{bind:pline          }{txt}{bind: float   }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}National Real Poverty Line (NPR/person/year){p_end}
+{p 0 48}{bind:fpline         }{txt}{bind: float   }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}National Real Food Poverty Line (NPR/person/year){p_end}
+{p 0 48}{bind:nfpline        }{txt}{bind: float   }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}National Real Non-food Poverty Line (NPR/person/year){p_end}
+{p 0 48}{bind:poor           }{txt}{bind: byte    }{bind:{txt}%9.0g     }{space 1}{bind:         }{bind:  }{res}{res}Poverty status{p_end}
+{p 0 48}{bind:quintile_pcep  }{txt}{bind: byte    }{bind:{txt}%11.0g    }{space 1}{bind:quintile }{bind:  }{res}{res}Expenditure quintile{p_end}
+{txt}{hline}
+Sorted by: 
+r; t=0.02 14:23:34
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *           Creating Tables                                        *
+. /*
+> 
+>         Author:                         Arpan and Kapil
+>         Date created:           7th Feb 2026
+>         Date updated:           8th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. *------------------------------------------------------------------------------*
+. * REPLICATE TABLE 11.1: POPULATION DISTRIBUTION BY QUINTILE                    *
+. *------------------------------------------------------------------------------*
+. 
+. use "$data_raw/poverty.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 14:24:30
+
+{com}. 
+. * 1. VERIFY NATIONAL DISTRIBUTION (Top Row of Table)
+. * Should be exactly 20.00% for each column
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:24:30
+
+{com}. display "NATIONAL (Top Row)"
+{res}NATIONAL (Top Row)
+{txt}r; t=0.00 14:24:30
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:24:30
+
+{com}. tab quintile_pcep [aw=ind_wt]
+
+{txt}Expenditure {c |}
+   quintile {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+1 (poorest) {c |}{res}1,922.49862       20.03       20.03
+{txt}          2 {c |}{res} 1,918.0958       19.98       40.01
+{txt}          3 {c |}{res} 1,921.8286       20.02       60.03
+{txt}          4 {c |}{res} 1,918.4531       19.98       80.01
+{txt}5 (richest) {c |}{res} 1,919.1239       19.99      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,600      100.00
+{txt}r; t=0.00 14:24:30
+
+{com}. 
+. * 2. PROVINCE DISTRIBUTION (Rows 2-8)
+. * Matches the 'Province' section of the image
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:24:30
+
+{com}. display "PROVINCE (Row %)"
+{res}PROVINCE (Row %)
+{txt}r; t=0.00 14:24:30
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:24:30
+
+{com}. tab prov quintile_pcep [aw=ind_wt], row nofreq
+
+             {txt}{c |}            Expenditure quintile
+    Province {c |} 1 (poores          2          3          4 {c |}     Total
+{hline 13}{c +}{hline 44}{c +}{hline 10}
+       Koshi {c |}{res}     16.80      18.90      21.13      21.38 {txt}{c |}{res}    100.00 
+{txt}     Madhesh {c |}{res}     22.21      23.45      21.59      16.90 {txt}{c |}{res}    100.00 
+{txt}     Bagmati {c |}{res}     12.31      15.35      20.18      23.92 {txt}{c |}{res}    100.00 
+{txt}     Gandaki {c |}{res}     11.88      16.25      18.83      27.41 {txt}{c |}{res}    100.00 
+{txt}     Lumbini {c |}{res}     24.23      19.72      17.61      19.37 {txt}{c |}{res}    100.00 
+{txt}     Karnali {c |}{res}     26.57      24.39      21.39      15.26 {txt}{c |}{res}    100.00 
+{txt}Sudurpaschim {c |}{res}     33.90      25.66      19.05      12.84 {txt}{c |}{res}    100.00 
+{txt}{hline 13}{c +}{hline 44}{c +}{hline 10}
+       Total {c |}{res}     20.03      19.98      20.02      19.98 {txt}{c |}{res}    100.00 
+
+
+             {txt}{c |} Expenditur
+             {c |} e quintile
+    Province {c |} 5 (riches {c |}     Total
+{hline 13}{c +}{hline 11}{c +}{hline 10}
+       Koshi {c |}{res}     21.79 {txt}{c |}{res}    100.00 
+{txt}     Madhesh {c |}{res}     15.85 {txt}{c |}{res}    100.00 
+{txt}     Bagmati {c |}{res}     28.24 {txt}{c |}{res}    100.00 
+{txt}     Gandaki {c |}{res}     25.63 {txt}{c |}{res}    100.00 
+{txt}     Lumbini {c |}{res}     19.08 {txt}{c |}{res}    100.00 
+{txt}     Karnali {c |}{res}     12.40 {txt}{c |}{res}    100.00 
+{txt}Sudurpaschim {c |}{res}      8.55 {txt}{c |}{res}    100.00 
+{txt}{hline 13}{c +}{hline 11}{c +}{hline 10}
+       Total {c |}{res}     19.99 {txt}{c |}{res}    100.00 
+{txt}r; t=0.00 14:24:30
+
+{com}. 
+. * 3. ANALYTICAL DOMAINS (Middle Section)
+. * Matches 'Koshi Urban', 'Koshi Rural' etc.
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:24:30
+
+{com}. display "ANALYTICAL DOMAINS (Row %)"
+{res}ANALYTICAL DOMAINS (Row %)
+{txt}r; t=0.00 14:24:30
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:24:30
+
+{com}. tab domain quintile_pcep [aw=ind_wt], row nofreq
+
+                      {txt}{c |}       Expenditure quintile
+    Analytical Domain {c |} 1 (poores          2          3 {c |}     Total
+{hline 22}{c +}{hline 33}{c +}{hline 10}
+          Koshi Urban {c |}{res}     15.47      17.76      22.67 {txt}{c |}{res}    100.00 
+{txt}          Koshi Rural {c |}{res}     19.34      21.09      18.19 {txt}{c |}{res}    100.00 
+{txt}        Madhesh Urban {c |}{res}     21.42      22.81      21.19 {txt}{c |}{res}    100.00 
+{txt}        Madhesh Rural {c |}{res}     24.54      25.34      22.75 {txt}{c |}{res}    100.00 
+{txt}Kathmandu Valley Urba {c |}{res}      7.17      13.51      22.73 {txt}{c |}{res}    100.00 
+{txt}Bagmati Urban(Excludi {c |}{res}     13.85      15.91      17.64 {txt}{c |}{res}    100.00 
+{txt}        Bagmati Rural {c |}{res}     25.18      19.93      16.82 {txt}{c |}{res}    100.00 
+{txt}        Gandaki Urban {c |}{res}     12.63      16.03      18.95 {txt}{c |}{res}    100.00 
+{txt}        Gandaki Rural {c |}{res}     10.27      16.74      18.55 {txt}{c |}{res}    100.00 
+{txt}        Lumbini Urban {c |}{res}     23.99      18.28      16.95 {txt}{c |}{res}    100.00 
+{txt}        Lumbini Rural {c |}{res}     24.57      21.81      18.57 {txt}{c |}{res}    100.00 
+{txt}        Karnali Urban {c |}{res}     22.93      24.85      20.89 {txt}{c |}{res}    100.00 
+{txt}        Karnali Rural {c |}{res}     30.86      23.84      21.98 {txt}{c |}{res}    100.00 
+{txt}   Sudurpaschim Urban {c |}{res}     30.79      24.22      19.27 {txt}{c |}{res}    100.00 
+{txt}   Sudurpaschim Rural {c |}{res}     39.61      28.30      18.64 {txt}{c |}{res}    100.00 
+{txt}{hline 22}{c +}{hline 33}{c +}{hline 10}
+                Total {c |}{res}     20.03      19.98      20.02 {txt}{c |}{res}    100.00 
+
+
+                      {txt}{c |} Expenditure quintile
+    Analytical Domain {c |}         4  5 (riches {c |}     Total
+{hline 22}{c +}{hline 22}{c +}{hline 10}
+          Koshi Urban {c |}{res}     21.93      22.17 {txt}{c |}{res}    100.00 
+{txt}          Koshi Rural {c |}{res}     20.33      21.05 {txt}{c |}{res}    100.00 
+{txt}        Madhesh Urban {c |}{res}     16.58      18.01 {txt}{c |}{res}    100.00 
+{txt}        Madhesh Rural {c |}{res}     17.84       9.53 {txt}{c |}{res}    100.00 
+{txt}Kathmandu Valley Urba {c |}{res}     26.56      30.03 {txt}{c |}{res}    100.00 
+{txt}Bagmati Urban(Excludi {c |}{res}     21.75      30.85 {txt}{c |}{res}    100.00 
+{txt}        Bagmati Rural {c |}{res}     19.65      18.41 {txt}{c |}{res}    100.00 
+{txt}        Gandaki Urban {c |}{res}     26.64      25.75 {txt}{c |}{res}    100.00 
+{txt}        Gandaki Rural {c |}{res}     29.08      25.36 {txt}{c |}{res}    100.00 
+{txt}        Lumbini Urban {c |}{res}     18.91      21.87 {txt}{c |}{res}    100.00 
+{txt}        Lumbini Rural {c |}{res}     20.05      15.01 {txt}{c |}{res}    100.00 
+{txt}        Karnali Urban {c |}{res}     15.43      15.90 {txt}{c |}{res}    100.00 
+{txt}        Karnali Rural {c |}{res}     15.05       8.26 {txt}{c |}{res}    100.00 
+{txt}   Sudurpaschim Urban {c |}{res}     15.00      10.71 {txt}{c |}{res}    100.00 
+{txt}   Sudurpaschim Rural {c |}{res}      8.87       4.59 {txt}{c |}{res}    100.00 
+{txt}{hline 22}{c +}{hline 22}{c +}{hline 10}
+                Total {c |}{res}     19.98      19.99 {txt}{c |}{res}    100.00 
+{txt}r; t=0.00 14:24:30
+
+{com}. 
+. * 4. URBAN / RURAL AGGREGATE (Bottom Section)
+. * We need to derive a simple Urban/Rural variable from 'domain' or 'ad_4'.
+. * Usually, if the domain label contains "Urban" or "KTM", it is Urban.
+. 
+. gen is_urban = .
+{txt}(9,600 missing values generated)
+r; t=0.00 14:24:30
+
+{com}. * Identify Urban based on the domain label text (most robust method here)
+. * 1=Urban, 0=Rural
+. decode domain, gen(domain_str)
+{txt}r; t=0.00 14:24:30
+
+{com}. replace is_urban = 1 if strpos(domain_str, "Urban") > 0 | strpos(domain_str, "KTM") > 0 | strpos(domain_str, "Kathmandu") > 0
+{txt}(5,532 real changes made)
+r; t=0.00 14:24:30
+
+{com}. replace is_urban = 0 if strpos(domain_str, "Rural") > 0
+{txt}(4,068 real changes made)
+r; t=0.00 14:24:30
+
+{com}. 
+. * Fallback using ad_4 if domain string parsing fails (assuming ad_4 has labels)
+. * Usually ad_4: 1=KTM Urban, 2=Other Urban, 3=Rural (check your labels to be sure)
+. * replace is_urban = 1 if ad_4 != . & is_urban == . // Placeholder logic
+. 
+. label define urb_lab 0 "Rural" 1 "Urban"
+{txt}r; t=0.00 14:24:30
+
+{com}. label values is_urban urb_lab
+{txt}r; t=0.00 14:24:30
+
+{com}. 
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:24:30
+
+{com}. display "URBAN / RURAL (Row %)"
+{res}URBAN / RURAL (Row %)
+{txt}r; t=0.00 14:24:30
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:24:30
+
+{com}. tab is_urban quintile_pcep [aw=ind_wt], row nofreq
+
+           {txt}{c |}            Expenditure quintile
+  is_urban {c |} 1 (poores          2          3          4 {c |}     Total
+{hline 11}{c +}{hline 44}{c +}{hline 10}
+     Rural {c |}{res}     24.37      22.46      19.35      18.96 {txt}{c |}{res}    100.00 
+{txt}     Urban {c |}{res}     18.12      18.89      20.31      20.43 {txt}{c |}{res}    100.00 
+{txt}{hline 11}{c +}{hline 44}{c +}{hline 10}
+     Total {c |}{res}     20.03      19.98      20.02      19.98 {txt}{c |}{res}    100.00 
+
+
+           {txt}{c |} Expenditur
+           {c |} e quintile
+  is_urban {c |} 5 (riches {c |}     Total
+{hline 11}{c +}{hline 11}{c +}{hline 10}
+     Rural {c |}{res}     14.86 {txt}{c |}{res}    100.00 
+{txt}     Urban {c |}{res}     22.25 {txt}{c |}{res}    100.00 
+{txt}{hline 11}{c +}{hline 11}{c +}{hline 10}
+     Total {c |}{res}     19.99 {txt}{c |}{res}    100.00 
+{txt}r; t=0.00 14:24:30
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.03 14:24:30
+{com}. ta quintile_pcep
+
+{txt}Expenditure {c |}
+   quintile {c |}      Freq.     Percent        Cum.
+{hline 12}{c +}{hline 35}
+1 (poorest) {c |}{res}      1,721       17.93       17.93
+{txt}          2 {c |}{res}      1,808       18.83       36.76
+{txt}          3 {c |}{res}      1,853       19.30       56.06
+{txt}          4 {c |}{res}      1,955       20.36       76.43
+{txt}5 (richest) {c |}{res}      2,263       23.57      100.00
+{txt}{hline 12}{c +}{hline 35}
+      Total {c |}{res}      9,600      100.00
+{txt}r; t=0.02 14:26:12
+
+{com}. tab domain quintile_pcep [aw=ind_wt], row nofreq
+
+                      {txt}{c |}                  Expenditure quintile
+    Analytical Domain {c |} 1 (poores          2          3          4  5 (riches {c |}     Total
+{hline 22}{c +}{hline 55}{c +}{hline 10}
+          Koshi Urban {c |}{res}     15.47      17.76      22.67      21.93      22.17 {txt}{c |}{res}    100.00 
+{txt}          Koshi Rural {c |}{res}     19.34      21.09      18.19      20.33      21.05 {txt}{c |}{res}    100.00 
+{txt}        Madhesh Urban {c |}{res}     21.42      22.81      21.19      16.58      18.01 {txt}{c |}{res}    100.00 
+{txt}        Madhesh Rural {c |}{res}     24.54      25.34      22.75      17.84       9.53 {txt}{c |}{res}    100.00 
+{txt}Kathmandu Valley Urba {c |}{res}      7.17      13.51      22.73      26.56      30.03 {txt}{c |}{res}    100.00 
+{txt}Bagmati Urban(Excludi {c |}{res}     13.85      15.91      17.64      21.75      30.85 {txt}{c |}{res}    100.00 
+{txt}        Bagmati Rural {c |}{res}     25.18      19.93      16.82      19.65      18.41 {txt}{c |}{res}    100.00 
+{txt}        Gandaki Urban {c |}{res}     12.63      16.03      18.95      26.64      25.75 {txt}{c |}{res}    100.00 
+{txt}        Gandaki Rural {c |}{res}     10.27      16.74      18.55      29.08      25.36 {txt}{c |}{res}    100.00 
+{txt}        Lumbini Urban {c |}{res}     23.99      18.28      16.95      18.91      21.87 {txt}{c |}{res}    100.00 
+{txt}        Lumbini Rural {c |}{res}     24.57      21.81      18.57      20.05      15.01 {txt}{c |}{res}    100.00 
+{txt}        Karnali Urban {c |}{res}     22.93      24.85      20.89      15.43      15.90 {txt}{c |}{res}    100.00 
+{txt}        Karnali Rural {c |}{res}     30.86      23.84      21.98      15.05       8.26 {txt}{c |}{res}    100.00 
+{txt}   Sudurpaschim Urban {c |}{res}     30.79      24.22      19.27      15.00      10.71 {txt}{c |}{res}    100.00 
+{txt}   Sudurpaschim Rural {c |}{res}     39.61      28.30      18.64       8.87       4.59 {txt}{c |}{res}    100.00 
+{txt}{hline 22}{c +}{hline 55}{c +}{hline 10}
+                Total {c |}{res}     20.03      19.98      20.02      19.98      19.99 {txt}{c |}{res}    100.00 
+{txt}r; t=0.03 14:27:10
+
+{com}. tab domain quintile_pcep [aw=hh_wt], row nofreq
+{err}hh_wt not found
+{txt}{search r(111), local:r(111);} t=0.03 14:27:50
+
+{com}. tab domain quintile_pcep [aw=hhs_wt], row nofreq
+
+                      {txt}{c |}                  Expenditure quintile
+    Analytical Domain {c |} 1 (poores          2          3          4  5 (riches {c |}     Total
+{hline 22}{c +}{hline 55}{c +}{hline 10}
+          Koshi Urban {c |}{res}     13.01      16.00      21.85      22.94      26.20 {txt}{c |}{res}    100.00 
+{txt}          Koshi Rural {c |}{res}     16.41      19.71      17.92      21.20      24.77 {txt}{c |}{res}    100.00 
+{txt}        Madhesh Urban {c |}{res}     18.73      20.96      20.62      17.79      21.90 {txt}{c |}{res}    100.00 
+{txt}        Madhesh Rural {c |}{res}     20.90      24.73      21.91      20.27      12.19 {txt}{c |}{res}    100.00 
+{txt}Kathmandu Valley Urba {c |}{res}      5.94      12.32      21.55      26.86      33.33 {txt}{c |}{res}    100.00 
+{txt}Bagmati Urban(Excludi {c |}{res}     12.66      15.54      16.85      19.92      35.03 {txt}{c |}{res}    100.00 
+{txt}        Bagmati Rural {c |}{res}     19.78      18.49      17.72      20.14      23.87 {txt}{c |}{res}    100.00 
+{txt}        Gandaki Urban {c |}{res}     10.89      13.58      18.45      27.52      29.55 {txt}{c |}{res}    100.00 
+{txt}        Gandaki Rural {c |}{res}      7.88      13.56      18.57      28.30      31.70 {txt}{c |}{res}    100.00 
+{txt}        Lumbini Urban {c |}{res}     18.94      16.24      16.74      19.98      28.09 {txt}{c |}{res}    100.00 
+{txt}        Lumbini Rural {c |}{res}     20.22      20.59      19.03      21.47      18.70 {txt}{c |}{res}    100.00 
+{txt}        Karnali Urban {c |}{res}     18.10      24.33      20.85      16.14      20.58 {txt}{c |}{res}    100.00 
+{txt}        Karnali Rural {c |}{res}     25.54      22.23      21.35      16.60      14.27 {txt}{c |}{res}    100.00 
+{txt}   Sudurpaschim Urban {c |}{res}     27.10      22.05      19.62      15.70      15.55 {txt}{c |}{res}    100.00 
+{txt}   Sudurpaschim Rural {c |}{res}     34.23      27.53      20.56      10.12       7.57 {txt}{c |}{res}    100.00 
+{txt}{hline 22}{c +}{hline 55}{c +}{hline 10}
+                Total {c |}{res}     16.47      18.11      19.60      21.08      24.73 {txt}{c |}{res}    100.00 
+{txt}r; t=0.02 14:27:56
+
+{com}. tab prov quintile_pcep [aw=ind_wt], row nofreq
+
+             {txt}{c |}                  Expenditure quintile
+    Province {c |} 1 (poores          2          3          4  5 (riches {c |}     Total
+{hline 13}{c +}{hline 55}{c +}{hline 10}
+       Koshi {c |}{res}     16.80      18.90      21.13      21.38      21.79 {txt}{c |}{res}    100.00 
+{txt}     Madhesh {c |}{res}     22.21      23.45      21.59      16.90      15.85 {txt}{c |}{res}    100.00 
+{txt}     Bagmati {c |}{res}     12.31      15.35      20.18      23.92      28.24 {txt}{c |}{res}    100.00 
+{txt}     Gandaki {c |}{res}     11.88      16.25      18.83      27.41      25.63 {txt}{c |}{res}    100.00 
+{txt}     Lumbini {c |}{res}     24.23      19.72      17.61      19.37      19.08 {txt}{c |}{res}    100.00 
+{txt}     Karnali {c |}{res}     26.57      24.39      21.39      15.26      12.40 {txt}{c |}{res}    100.00 
+{txt}Sudurpaschim {c |}{res}     33.90      25.66      19.05      12.84       8.55 {txt}{c |}{res}    100.00 
+{txt}{hline 13}{c +}{hline 55}{c +}{hline 10}
+       Total {c |}{res}     20.03      19.98      20.02      19.98      19.99 {txt}{c |}{res}    100.00 
+{txt}r; t=0.03 14:28:37
+
+{com}. 

@@ -1,0 +1,311 @@
+{smcl}
+{txt}{sf}{ul off}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/4_log/01_data_merge_7Feb26_17.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 7 Feb 2026, 17:21:23
+{txt}r; t=0.00 17:21:23
+{com}.         
+. {c )-}       
+{txt}r; t=0.00 17:21:23
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. 
+. use "$data_raw\S01.dta", clear 
+{txt}(NLSS04_DICT)
+r; t=0.01 17:21:24
+
+{com}. keep psu_number hh_number idcode q01_07
+{txt}r; t=0.00 17:21:24
+
+{com}. 
+. 
+. preserve
+{txt}r; t=0.01 17:21:24
+
+{com}.         use "$data_raw\S02.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 17:21:24
+
+{com}. 
+.         rename  q02_30 electricity
+{res}{txt}r; t=0.04 17:21:24
+
+{com}.         rename  q02_31_a2 landline_exp 
+{res}{txt}r; t=0.00 17:21:24
+
+{com}.         rename q02_31_b2 tv_exp 
+{res}{txt}r; t=0.00 17:21:24
+
+{com}.         rename q02_31_c2 internet_exp
+{res}{txt}r; t=0.00 17:21:24
+
+{com}.         
+.         gen totalexp = electricity + landline_exp + tv_exp + internet_exp
+{txt}(9,483 missing values generated)
+r; t=0.00 17:21:24
+
+{com}.         
+.         tempfile sec_02
+{txt}r; t=0.00 17:21:24
+
+{com}.         save `sec_02', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000002.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\ARPANA~1\AppData\Local\Temp\ST_b210_000002.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 17:21:24
+
+{com}. restore
+{txt}r; t=0.00 17:21:24
+
+{com}. 
+. merge m:1 psu_number hh_number using `sec_02', keepusing(electricity landline_exp tv_exp internet_exp)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}          46,870{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.02 17:21:24
+
+{com}. 
+. /*
+> Individuals are merged with their household's utility expenses
+> 
+>  Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                             0
+>     Matched                            46,870  (_merge==3)
+>     -----------------------------------------
+> */
+. assert _merge == 3
+{txt}r; t=0.00 17:21:24
+
+{com}. drop _merge
+{txt}r; t=0.00 17:21:24
+
+{com}. 
+. 
+. 
+. * Load Section 6A (Non-Food Non-Durable)
+. use "$data_raw/S06A.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.07 17:21:24
+
+{com}. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+{txt}end of do-file
+
+r; t=0.17 17:21:24
+{com}. {txt}r; t=0.38 17:22:37
+{com}BR
+{err}command {bf}BR{sf} is unrecognized
+{txt}{search r(199), local:r(199);} t=0.01 17:25:55
+
+{com}. br
+{txt}r; t=0.32 17:25:59
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. local excluded_items 0511 0512 0531 0532 0551 0711 0712 0713 0714 0911 0912 0913 0914 0922 0932 0943
+{txt}r; t=0.00 17:56:14
+
+{com}. 
+. foreach code of local excluded_items{c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}. {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.78 17:56:15
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.79 17:56:15
+{com}. de
+
+{txt}Contains data from {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/1_raw/S06A.dta
+{txt} Observations:{res}     1,075,200                  NLSS04_DICT
+{txt}    Variables:{res}             8                  7 Jul 2024 21:35
+{txt}{hline}
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:psu_number     }{txt}{bind: int     }{bind:{txt}%10.0f    }{space 1}{bind:         }{bind:  }{res}{res}PSU NUMBER{p_end}
+{p 0 48}{bind:hh_number      }{txt}{bind: byte    }{bind:{txt}%10.0f    }{space 1}{bind:         }{bind:  }{res}{res}HH NUMBER{p_end}
+{p 0 48}{bind:s06a_code      }{txt}{bind: int     }{bind:{txt}%10.0f    }{space 1}{bind:         }{bind:  }{res}{res}CODE{p_end}
+{p 0 48}{bind:s06a_desc      }{txt}{bind: str100  }{bind:{txt}%24s      }{space 1}{bind:         }{bind:  }{res}{res}DESCRIPTION{p_end}
+{p 0 48}{bind:group_6a       }{txt}{bind: byte    }{bind:{txt}%10.0f    }{space 1}{bind:         }{bind:  }{res}{res}Group 06A{p_end}
+{p 0 48}{bind:q06_01a        }{txt}{bind: byte    }{bind:{txt}%10.0f    }{space 1}{txt}Q06_01A_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Were any of the following items purchased or received in-kind over the past 12 m{p_end}
+{p 0 48}{bind:q06_02a_a      }{txt}{bind: long    }{bind:{txt}%10.0f    }{space 1}{bind:         }{bind:  }{res}{res}A ….during the past 12 months? RUPEES{p_end}
+{p 0 48}{bind:q06_02a_b      }{txt}{bind: long    }{bind:{txt}%10.0f    }{space 1}{bind:         }{bind:  }{res}{res}B…. during the past 30 days? RUPEES{p_end}
+{txt}{hline}
+Sorted by: 
+{res}     Note: Dataset has changed since last saved.
+{txt}r; t=0.02 17:57:15
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. replace q06_02a_a = 0 if q06_02a_a == .
+{txt}(688,190 real changes made)
+r; t=0.10 18:06:39
+
+{com}. replace q06_02a_b = 0 if q06_02a_b == .
+{txt}(688,190 real changes made)
+r; t=0.08 18:06:39
+
+{com}. 
+. *Creating Annualized 30-day value
+. gen annualized_30 = q06_02a_b * 12
+{txt}r; t=0.03 18:06:39
+
+{com}. 
+. bysort s06a_code: egen median_30_ann = median(annualized_30) if annualized_30 > 0
+{txt}(888,007 missing values generated)
+r; t=1.66 18:06:41
+
+{com}. bysort s06a_code: egen median_12 = median(q06_02a_a) if q06_02a_a > 0
+{txt}(688,190 missing values generated)
+r; t=1.34 18:06:42
+
+{com}. 
+. replace median_30_ann = 0 if median_30_ann == .
+{txt}(888,007 real changes made)
+r; t=0.06 18:06:43
+
+{com}. replace median_12 = 0 if median_12 == .
+{txt}(688,190 real changes made)
+r; t=0.07 18:06:43
+
+{com}. 
+. gen pct_diff = abs(median_30_ann - median_12) / median_12 if median_12 > 0
+{txt}(688,190 missing values generated)
+r; t=0.05 18:06:43
+
+{com}. 
+. gen is_regular = 0
+{txt}r; t=0.02 18:06:43
+
+{com}. replace is_regular = 1 if pct_diff <= 0.20 & pct_diff != .
+{txt}(75,761 real changes made)
+r; t=0.04 18:06:43
+
+{com}. 
+{txt}end of do-file
+
+r; t=3.44 18:06:43
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *Calculate Final Item Expenditure
+. gen final_item_exp = .
+{txt}(1,075,200 missing values generated)
+r; t=0.03 18:08:03
+
+{com}. 
+. replace final_item_exp = annualized_30 if is_regular == 1
+{txt}(75,761 real changes made)
+r; t=0.03 18:08:04
+
+{com}. * (Fallback: use 12-month if 30-day is 0/missing but 12-month exists)
+. replace final_item_exp = q06_02a_a if is_regular == 1 & (final_item_exp == 0 | final_item_exp == .)
+{txt}(0 real changes made)
+r; t=0.06 18:08:04
+
+{com}. 
+. replace final_item_exp = q06_02a_a if is_regular == 0
+{txt}(999,439 real changes made)
+r; t=0.04 18:08:04
+
+{com}. replace final_item_exp = annualized_30 if is_regular == 0 & (final_item_exp == 0 | final_item_exp == .)
+{txt}(0 real changes made)
+r; t=0.06 18:08:04
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.23 18:08:04
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STDb210_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *               Cleaning for consumption in NLSS                                           *
+. /*
+> 
+>         Author:                         Arpan and Kapil
+>         Date created:           7th Feb 2026
+>         Date updated:           7th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. clear 
+{txt}r; t=0.00 18:11:22
+
+{com}. cap clear frames
+{txt}r; t=0.00 18:11:22
+
+{com}. set more off 
+{txt}r; t=0.00 18:11:22
+
+{com}. set rmsg on
+{txt}r; t=0.00 18:11:22
+
+{com}. local dofilename "01_class"
+{txt}r; t=0.00 18:11:22
+
+{com}. cap log close
+{smcl}
+{com}{sf}{ul off}

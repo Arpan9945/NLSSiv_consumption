@@ -1,0 +1,163 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}D:\STATA\NLSS4coding/4_log/01_data_merge_4Nov25_15.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res} 4 Nov 2025, 15:47:48
+{txt}r; t=0.05 15:47:48
+{com}.         
+. {c )-}       
+{txt}r; t=0.08 15:47:48
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. 
+. use "$data_raw\S01.dta", clear 
+{txt}(NLSS04_DICT)
+r; t=0.05 15:47:48
+
+{com}. keep psu_number hh_number idcode q01_07
+{txt}r; t=0.00 15:47:48
+
+{com}. 
+. 
+. preserve
+{txt}r; t=0.01 15:47:48
+
+{com}.         use "$data_raw\S02.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.01 15:47:48
+
+{com}. 
+.         rename  q02_30 electricity
+{res}{txt}r; t=0.01 15:47:48
+
+{com}.         rename  q02_31_a2 landline_exp 
+{res}{txt}r; t=0.00 15:47:48
+
+{com}.         rename q02_31_b2 tv_exp 
+{res}{txt}r; t=0.00 15:47:48
+
+{com}.         rename q02_31_c2 internet_exp
+{res}{txt}r; t=0.00 15:47:48
+
+{com}.         
+.         gen totalexp = electricity + landline_exp + tv_exp + internet_exp
+{txt}(9,483 missing values generated)
+r; t=0.00 15:47:48
+
+{com}.         
+.         tempfile sec_02
+{txt}r; t=0.00 15:47:48
+
+{com}.         save `sec_02', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\Lenovo\AppData\Local\Temp\ST_91d0_000002.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\Lenovo\AppData\Local\Temp\ST_91d0_000002.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 15:47:48
+
+{com}. restore
+{txt}r; t=0.00 15:47:48
+
+{com}. 
+. merge m:1 psu_number hh_number using `sec_02', keepusing(electricity landline_exp tv_exp internet_exp)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}          46,870{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.07 15:47:48
+
+{com}. 
+. /*
+> Individuals are merged with their household's utility expenses
+> 
+>  Result                      Number of obs
+>     -----------------------------------------
+>     Not matched                             0
+>     Matched                            46,870  (_merge==3)
+>     -----------------------------------------
+> */
+. assert _merge == 3
+{txt}r; t=0.01 15:47:48
+
+{com}. drop _merge
+{txt}r; t=0.00 15:47:48
+
+{com}. 
+. 
+. use "$data_raw\S03", clear 
+{txt}(NLSS04_DICT)
+r; t=0.24 15:47:48
+
+{com}. 
+. bys psu_number dist_name hh_number: egen avg_dist = mean(q03_03)
+{txt}(184 missing values generated)
+r; t=0.24 15:47:49
+
+{com}. keep psu_number dist_name hh_number avg_dist
+{txt}r; t=0.01 15:47:49
+
+{com}. duplicates drop psu_number dist_name hh_number, force
+
+{p 0 4}{txt}Duplicates in terms of {res} psu_number dist_name hh_number{p_end}
+
+{txt}(211,200 observations deleted)
+r; t=0.35 15:47:49
+
+{com}. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+. 
+{txt}end of do-file
+
+r; t=1.11 15:47:49
+{com}. {txt}r; t=0.65 15:47:53
+{com}do "C:\Users\Lenovo\AppData\Local\Temp\STD91d0_000000.tmp"
+{txt}
+{com}. label var avg_dist "Average distance to everything"
+{txt}r; t=0.00 15:48:42
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.02 15:48:42
+{com}. exit, clear

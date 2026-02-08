@@ -1,0 +1,13 @@
+# Ignore Stata Data Files
+*.dta
+*.tmp
+*.gph
+*.stpr
+
+# Ignore Excel Output (Optional)
+*.xlsx
+*.xls
+
+# Ignore System Files
+.DS_Store
+Thumbs.db
