@@ -1,0 +1,133 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/4_log/01_data_merge_10Feb26_18.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}10 Feb 2026, 18:34:55
+{txt}r; t=0.00 18:34:55
+{com}.         
+. {c )-}       
+{txt}r; t=0.01 18:34:55
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. use "$data_raw/S08.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.01 18:34:55
+
+{com}. 
+. 
+. 
+{txt}end of do-file
+
+r; t=0.03 18:34:55
+{com}. {txt}r; t=0.23 18:35:02
+{com}count
+  {res}46,870
+{txt}r; t=0.00 18:35:31
+
+{com}. {txt}r; t=0.25 18:35:39
+{com}de
+
+{txt}Contains data from {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/1_data/1_raw/S08.dta
+{txt} Observations:{res}        46,870                  NLSS04_DICT
+{txt}    Variables:{res}            40                  7 Jul 2024 21:36
+{txt}{hline}
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+{hline}
+{p 0 48}{res}{bind:psu_number     }{txt}{bind: int     }{bind:{txt}%4.0f     }{space 1}{bind:         }{bind:  }{res}{res}PSU NUMBER{p_end}
+{p 0 48}{bind:hh_number      }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}HH NUMBER{p_end}
+{p 0 48}{bind:idcode         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}IDENTIFICATION CODE{p_end}
+{p 0 48}{bind:q08_01         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}RESPONDENT{p_end}
+{p 0 48}{bind:q08_02         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_02_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Do you suffer from a non-communicable illness?{p_end}
+{p 0 48}{bind:q08_03         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q08_03_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Which non-communicable illness do you primarily suffer from?{p_end}
+{p 0 48}{bind:q08_04         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{bind:         }{bind:  }{res}{res}How many years ago did the illness start?{p_end}
+{p 0 48}{bind:q08_05         }{txt}{bind: byte    }{bind:{txt}%2.0f     }{space 1}{txt}Q08_05_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Where did you go for the last consultation in relation to this illness?{p_end}
+{p 0 48}{bind:q08_06_a       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}How much have you spent in the past 12 months on the treatment of this illness i{p_end}
+{p 0 48}{bind:q08_06_b       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}OUTPATIENT / EMERGENCY{p_end}
+{p 0 48}{bind:q08_06_c       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}LABORATORY{p_end}
+{p 0 48}{bind:q08_06_d       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}IMAGING (X-RAY, MRI. ULTRASOUND, ETC.){p_end}
+{p 0 48}{bind:q08_06_e       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}MEDICINE{p_end}
+{p 0 48}{bind:q08_06_f       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}TRANSPORTATION{p_end}
+{p 0 48}{bind:q08_06_g       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}HEALTH RELATED PRODUCTS (WHEELCHAIR, SPECTACLES, ETC.){p_end}
+{p 0 48}{bind:q08_06_h       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}OTHER COST{p_end}
+{p 0 48}{bind:q08_06_i       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}TOTAL COST{p_end}
+{p 0 48}{bind:q08_07         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_07_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What was your main source of funds for healthcare and treatment?{p_end}
+{p 0 48}{bind:q08_08         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_08_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Did you have to stop doing his/her usual activities because of this illness or i{p_end}
+{p 0 48}{bind:q08_09         }{txt}{bind: int     }{bind:{txt}%3.0f     }{space 1}{bind:         }{bind:  }{res}{res}How many days did you have to stop doing his/her usual activity due to this illn{p_end}
+{p 0 48}{bind:q08_10         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_10_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Have you had any health problem or has been injured or needed to visit a health {p_end}
+{p 0 48}{bind:q08_11         }{txt}{bind: byte    }{bind:{txt}%3.0f     }{space 1}{txt}Q08_11_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What type of illness or injury?{p_end}
+{p 0 48}{bind:q08_12         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_12_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Was anyone consulted (e.g. a doctor, nurse, pharmacist or other healer) for the {p_end}
+{p 0 48}{bind:q08_13         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_13_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Whom did  you consult or treat with?{p_end}
+{p 0 48}{bind:q08_14_a       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}How much was spent for the past consultation of this injury and illness for serv{p_end}
+{p 0 48}{bind:q08_14_b       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}OUTPATIENT / EMERGENCY{p_end}
+{p 0 48}{bind:q08_14_c       }{txt}{bind: int     }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}LABORATORY{p_end}
+{p 0 48}{bind:q08_14_d       }{txt}{bind: int     }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}IMAGING (X-RAY, MRI. ULTRASOUND, ETC.){p_end}
+{p 0 48}{bind:q08_14_e       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}MEDICINE{p_end}
+{p 0 48}{bind:q08_14_f       }{txt}{bind: int     }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}TRANSPORTATION{p_end}
+{p 0 48}{bind:q08_14_g       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}HEALTH RELATED PRODUCTS (WHEELCHAIR, SPECTACLES, ETC.){p_end}
+{p 0 48}{bind:q08_14_h       }{txt}{bind: int     }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}OTHER COST{p_end}
+{p 0 48}{bind:q08_14_i       }{txt}{bind: long    }{bind:{txt}%8.0f     }{space 1}{bind:         }{bind:  }{res}{res}TOTAL COST{p_end}
+{p 0 48}{bind:q08_15         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_15_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}What was your main source of funds for healthcare and treatment?{p_end}
+{p 0 48}{bind:q08_16         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_16_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Do you have difficulty seeing, even if wearing glasses?{p_end}
+{p 0 48}{bind:q08_17         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_17_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Do you have difficulty hearing, even if using a hearing aid?{p_end}
+{p 0 48}{bind:q08_18         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_18_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Do you have difficulty walking or climbing steps?{p_end}
+{p 0 48}{bind:q08_19         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_19_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Do you have difficulty remembering or concentrating?{p_end}
+{p 0 48}{bind:q08_20         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_20_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Do you have difficulty with self-care, such as washing all over or dressing?{p_end}
+{p 0 48}{bind:q08_21         }{txt}{bind: byte    }{bind:{txt}%1.0f     }{space 1}{txt}Q08_21_VS1{p_end}
+{p 0 48}{space 44}{bind:  }{res}{res}Using your usual (customary) language, do you have difficulty communicating, for{p_end}
+{txt}{hline}
+Sorted by: 
+r; t=0.00 18:39:40
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STD5c10_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *            Cleaning for Health Expenses related stuffs in NLSS                                           *
+. /*
+> 
+>         Author:                         Arpan 
+>         Date created:           10th Feb 2026
+>         Date updated:           10th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. 
+. {c -(}
+. *------------------------------------------------------------------------------*
+. **#                                                     STATA setups                                                                        
+. *------------------------------------------------------------------------------*
+. clear
+{txt}r; t=0.01 19:01:31
+{com}. cap clear frames
+{txt}r; t=0.00 19:01:31
+{com}. set more off
+{txt}r; t=0.00 19:01:31
+{com}. set rmsg on
+{txt}r; t=0.00 19:01:31
+{com}. local dofilename "01_data_merge"
+{txt}r; t=0.00 19:01:31
+{com}. cap log close
+{smcl}
+{com}{sf}{ul off}

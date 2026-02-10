@@ -102,11 +102,15 @@ cap clear frames
 
 cd "$workspace"
 
-do "$prep/1_nonfood_nd.do"
+*Project1: Working for cleaning consumption (NLSS IV)
+doedit "$prep/1_nonfood_nd.do"
 do "$prep/2_durables.do"
 do "$prep/3_house-rent.do"
 do "$prep/4_food-cons.do"
 do "$prep/5_final-agg.do"
+
+*Project2 : Also cleaning health related expenditure for something else
+doedit "$prep/6_health_exp.do"
 
 *------------------------------------------------------------------------------*		
 **#							End of do file
