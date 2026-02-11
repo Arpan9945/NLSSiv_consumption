@@ -4,7 +4,6 @@
 
 import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
 
-
 rename year purchase_year
 tostring purchase_year, replace
 

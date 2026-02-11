@@ -1,0 +1,541 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:\Users\iprad\OneDrive\Documents\GitHub\NLSSiv_consumption/4_log/01_data_merge_11Feb26_14.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}11 Feb 2026, 14:39:48
+{txt}r; t=0.03 14:39:48
+{com}.         
+. {c )-}       
+{txt}r; t=0.04 14:39:48
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. 
+. 
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:39:48
+
+{com}. display "STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)"
+{res}STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)
+{txt}r; t=0.00 14:39:48
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 14:39:48
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 1: NON-FOOD NON-DURABLE (SECTION 6A) - STRICT EXCLUSIONS                *
+. *------------------------------------------------------------------------------*
+. 
+. tempfile sec6a_agg
+{txt}r; t=0.00 14:39:48
+
+{com}. 
+. preserve 
+{txt}r; t=0.00 14:39:48
+
+{com}.     use "$data_raw/S06A.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.19 14:39:48
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * A. DEFINE EXCLUSIONS (Based on Methodology Text)
+.     *--------------------------------------------------------------------------*
+.         
+.         gen is_header = mod(s06a_code, 10) == 0
+{txt}r; t=0.18 14:39:48
+
+{com}.     drop if is_header == 1
+{txt}(345,600 observations deleted)
+r; t=0.12 14:39:48
+
+{com}.     
+.     * 1. DURABLES (Investments/Assets)
+.     * Furniture, Vehicles, Electronics, etc.
+.     local durables 511 512 531 532 541 551 711 712 713 714 ///
+>                    911 912 913 914 922 932 943 1231
+{txt}r; t=0.00 14:39:48
+
+{com}. 
+.     * 2. HEALTH EXPENSES but included education as well from 0955 (Defensive Expenditure - Excluded per Methodology)
+.     * 1051 = Preventive health care
+.     * 1052 = Treatment care (medicines, admission)
+.     local health_excluded 1051 1052
+{txt}r; t=0.00 14:39:48
+
+{com}. 
+.     * 3. NON-CONSUMPTION & LUMPY EXPENDITURES
+.     * 1241 = Donations (Transfer out)
+.     * 1251 = Life Insurance (Savings/Investment)
+.     * 1252 = Non-life Insurance (often excluded)
+.     * 1262 = Banking fees (Often considered service, but can be financial cost. We KEEP this usually as a service fee, unless "Interest payments")
+.     * 1271 = Registration/Renewal Fees (Taxes/Levies - Excluded)
+.     * 1272 = Legal Expenses (Often lumpy/admin - Excluded)
+.     * 1273 = Marriage/Death/Birth functions (Lumpy Life Events - Excluded)
+.     local lumpy_excluded 1241 1251 1252 1271 1272 1273
+{txt}r; t=0.00 14:39:48
+
+{com}. 
+.     * APPLY EXCLUSIONS
+.     foreach code of local durables {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=1.98 14:39:50
+
+{com}.     foreach code of local health_excluded {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.17 14:39:50
+
+{com}.     foreach code of local lumpy_excluded {c -(}
+{txt}  2{com}.         drop if s06a_code == `code'
+{txt}  3{com}.     {c )-}
+{txt}(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+(9,600 observations deleted)
+r; t=0.41 14:39:51
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * B. IDENTIFY EDUCATION (To be compared with S07 later)
+.     *--------------------------------------------------------------------------*
+.     * 1010-1040 = School Fees
+.     * 0955 = Academic Books
+.     * 1122 = Hostel Costs
+.     gen is_education_s06 = 0
+{txt}r; t=0.03 14:39:51
+
+{com}.     replace is_education_s06 = 1 if inlist(s06a_code, 1010, 1020, 1030, 1040, 0955, 1122)
+{txt}(19,200 real changes made)
+r; t=0.06 14:39:51
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * C. CLEANING & AGGREGATION
+.     *--------------------------------------------------------------------------*
+.     
+.     * Clean Missing Values
+.     replace q06_02a_b = 0 if q06_02a_b == .  // 30-day recall
+{txt}(445,872 real changes made)
+r; t=0.09 14:39:51
+
+{com}.     replace q06_02a_a = 0 if q06_02a_a == .  // 12-month recall
+{txt}(445,872 real changes made)
+r; t=0.12 14:39:51
+
+{com}. 
+.     * Calculate Annual Expenditure (Methodology 3.2.1)
+.     gen annualized_30 = q06_02a_b * 12
+{txt}r; t=0.13 14:39:51
+
+{com}.     
+.     * Calculate Medians
+.     bysort s06a_code: egen median_30_ann = median(annualized_30) if annualized_30 > 0
+{txt}(551,351 missing values generated)
+r; t=1.09 14:39:52
+
+{com}.     bysort s06a_code: egen median_12 = median(q06_02a_a) if q06_02a_a > 0
+{txt}(445,872 missing values generated)
+r; t=0.97 14:39:53
+
+{com}.     
+.     replace median_30_ann = 0 if median_30_ann == .
+{txt}(551,351 real changes made)
+r; t=0.08 14:39:53
+
+{com}.     replace median_12 = 0 if median_12 == .
+{txt}(445,872 real changes made)
+r; t=0.07 14:39:53
+
+{com}. 
+.     * Check Regularity (Diff <= 20%)
+.     gen pct_diff = abs(median_30_ann - median_12) / median_12 if median_12 > 0
+{txt}(445,872 missing values generated)
+r; t=0.08 14:39:54
+
+{com}.     gen is_regular = 0
+{txt}r; t=0.04 14:39:54
+
+{com}.     replace is_regular = 1 if pct_diff <= 0.20 & pct_diff != .
+{txt}(35,564 real changes made)
+r; t=0.08 14:39:54
+
+{com}. 
+.     * Select Final Amount
+.     gen final_item_exp = .
+{txt}(633,600 missing values generated)
+r; t=0.04 14:39:54
+
+{com}.     replace final_item_exp = annualized_30 if is_regular == 1
+{txt}(35,564 real changes made)
+r; t=0.07 14:39:54
+
+{com}.     replace final_item_exp = q06_02a_a if is_regular == 1 & final_item_exp == 0
+{txt}(0 real changes made)
+r; t=0.10 14:39:54
+
+{com}.     replace final_item_exp = q06_02a_a if is_regular == 0
+{txt}(598,036 real changes made)
+r; t=0.12 14:39:54
+
+{com}.     replace final_item_exp = annualized_30 if is_regular == 0 & final_item_exp == 0
+{txt}(0 real changes made)
+r; t=0.11 14:39:54
+
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * D. COLLAPSE TO HOUSEHOLD LEVEL (Splitting Education vs Other)
+.     *--------------------------------------------------------------------------*
+.     
+.     * Sum separately for Education and Non-Education
+.     collapse (sum) educ_s06_total = final_item_exp ///
+>                    nonfood_s06_other = final_item_exp, ///
+>              by(psu_number hh_number is_education_s06)
+{res}{txt}r; t=0.38 14:39:54
+
+{com}.              
+.     * Flatten to 1 row per HH
+.     replace educ_s06_total = 0 if is_education_s06 == 0
+{txt}(9,600 real changes made)
+r; t=0.00 14:39:54
+
+{com}.     replace nonfood_s06_other = 0 if is_education_s06 == 1
+{txt}(4,514 real changes made)
+r; t=0.00 14:39:54
+
+{com}.     
+.     collapse (sum) educ_s06_total nonfood_s06_other, by(psu_number hh_number)
+{res}{txt}r; t=0.01 14:39:55
+
+{com}. 
+.     label var educ_s06_total "Education Exp (Section 6A)"
+{txt}r; t=0.00 14:39:55
+
+{com}.     label var nonfood_s06_other "Other Non-Food Exp (S06A) - Excl Health/Taxes"
+{txt}r; t=0.00 14:39:55
+
+{com}. 
+.     save `sec6a_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\iprad\AppData\Local\Temp\ST_3a68_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\iprad\AppData\Local\Temp\ST_3a68_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 14:39:55
+
+{com}. restore
+{txt}r; t=0.00 14:39:55
+
+{com}. display "Section 6A Finalized (Health & Lumpy Items Excluded)."
+{res}Section 6A Finalized (Health & Lumpy Items Excluded).
+{txt}r; t=0.00 14:39:55
+
+{com}. 
+. 
+. 
+. 
+. 
+. 
+. 
+. *------------------------------------------------------------------------------*
+. * STEP 2: EDUCATION (SECTION 7)                                                *
+. *------------------------------------------------------------------------------*
+. tempfile educ_s07_agg
+{txt}r; t=0.00 14:39:55
+
+{com}. preserve
+{txt}r; t=0.00 14:39:55
+
+{com}.     use "$data_raw/S07.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 14:39:55
+
+{com}.     foreach var of varlist q07_17_a-q07_17_g {c -(}
+{txt}  2{com}.         replace `var' = 0 if `var' == .
+{txt}  3{com}.     {c )-}
+{txt}(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+(35,878 real changes made)
+r; t=0.08 14:39:55
+
+{com}.     egen educ_individual_total = rowtotal(q07_17_a-q07_17_g)
+{txt}r; t=0.09 14:39:55
+
+{com}.     collapse (sum) educ_s07_total = educ_individual_total, by(psu_number hh_number)
+{res}{txt}r; t=0.03 14:39:55
+
+{com}.     save `educ_s07_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\iprad\AppData\Local\Temp\ST_3a68_000003.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\iprad\AppData\Local\Temp\ST_3a68_000003.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 14:39:55
+
+{com}. restore
+{txt}r; t=0.00 14:39:55
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 3: UTILITIES (SECTION 2)                                                *
+. *------------------------------------------------------------------------------*
+. tempfile util_agg
+{txt}r; t=0.00 14:39:55
+
+{com}. preserve
+{txt}r; t=0.00 14:39:55
+
+{com}.     use "$data_raw/S02.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.00 14:39:55
+
+{com}.     
+.     * Clean missing
+.     replace q02_23 = 0 if q02_23 == .   // Water (Annual)
+{txt}(1 real change made)
+r; t=0.00 14:39:55
+
+{com}.     replace q02_26 = 0 if q02_26 == .   // Garbage (Monthly)
+{txt}(7,381 real changes made)
+r; t=0.00 14:39:55
+
+{com}.     replace q02_30 = 0 if q02_30 == .   // Electricity (Annual)
+{txt}(0 real changes made)
+r; t=0.00 14:39:55
+
+{com}.     replace q02_31_a2 = 0 if q02_31_a2 == . // Landline (Annual)
+{txt}(9,430 real changes made)
+r; t=0.00 14:39:55
+
+{com}. 
+.     * Calculate Utilities (Annualize Garbage)
+.     gen utilities_annual = q02_23 + (q02_26 * 12) + q02_30 + q02_31_a2
+{txt}r; t=0.00 14:39:55
+
+{com}.     
+.     collapse (sum) utilities_annual, by(psu_number hh_number)
+{res}{txt}r; t=0.02 14:39:55
+
+{com}.     save `util_agg', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\iprad\AppData\Local\Temp\ST_3a68_000005.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\iprad\AppData\Local\Temp\ST_3a68_000005.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 14:39:55
+
+{com}. restore
+{txt}r; t=0.00 14:39:55
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 4: FINAL MERGE                                                          *
+. *------------------------------------------------------------------------------*
+. use `sec6a_agg', clear
+{txt}(NLSS04_DICT)
+r; t=0.00 14:39:55
+
+{com}. 
+. * Merge S07 (Education)
+. merge 1:1 psu_number hh_number using `educ_s07_agg'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 14:39:55
+
+{com}. drop _merge
+{txt}r; t=0.00 14:39:55
+
+{com}. replace educ_s07_total = 0 if educ_s07_total == .
+{txt}(0 real changes made)
+r; t=0.00 14:39:55
+
+{com}. 
+. * Merge S02 (Utilities)
+. merge 1:1 psu_number hh_number using `util_agg'
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.02 14:39:55
+
+{com}. drop _merge
+{txt}r; t=0.00 14:39:55
+
+{com}. replace utilities_annual = 0 if utilities_annual == .
+{txt}(0 real changes made)
+r; t=0.00 14:39:55
+
+{com}. 
+. * COMPUTE FINAL AGGREGATES
+. * 1. Final Education = Max(Section 6A, Section 7)
+. gen educ_final = max(educ_s06_total, educ_s07_total)
+{txt}r; t=0.00 14:39:55
+
+{com}. 
+. * 2. Final Non-Food Non-Durable Aggregate
+. * Note: Health is EXCLUDED. Taxes are EXCLUDED.
+. gen agg_nonfood_nondurable = nonfood_s06_other + educ_final + utilities_annual
+{txt}r; t=0.00 14:39:55
+
+{com}. 
+. label var agg_nonfood_nondurable "Final Non-Food Non-Durable Aggregate (Annual)"
+{txt}r; t=0.00 14:39:55
+
+{com}. 
+. * Check
+. summarize agg_nonfood_nondurable, detail
+
+        {txt}Final Non-Food Non-Durable Aggregate (Annual)
+{hline 61}
+      Percentiles      Smallest
+ 1%    {res}     8540            350
+{txt} 5%    {res}    17895            600
+{txt}10%    {res}    25530           1010       {txt}Obs         {res}      9,600
+{txt}25%    {res}    45900           1310       {txt}Sum of wgt. {res}      9,600
+
+{txt}50%    {res}    82578                      {txt}Mean          {res} 118581.6
+                        {txt}Largest       Std. dev.     {res}   125260
+{txt}75%    {res}   145030        1578490
+{txt}90%    {res} 246287.5        1664420       {txt}Variance      {res} 1.57e+10
+{txt}95%    {res} 343092.5        1670900       {txt}Skewness      {res} 3.817358
+{txt}99%    {res}   613000        1726600       {txt}Kurtosis      {res} 28.55472
+{txt}r; t=0.03 14:39:55
+
+{com}. 
+. * Save
+. save "$data_tmp/agg_nonfood_nondurable_final.dta", replace
+{txt}{p 0 4 2}
+file {bf}
+C:\Users\iprad\OneDrive\Documents\GitHub\NLSSiv_consumption/1_data/4_tmp/agg_nonfood_nondurable_final.dta{rm}
+saved
+{p_end}
+r; t=0.01 14:39:55
+
+{com}. 
+. 
+. 
+. 
+. 
+{txt}end of do-file
+
+r; t=7.10 14:39:55
+{com}. do "C:\Users\iprad\AppData\Local\Temp\STD3a68_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. * STEP 3.2.2: DURABLES CONSUMPTION FLOW (USER COST) - EXCEL VERSION            *
+. *------------------------------------------------------------------------------*
+. 
+. import excel "$data_raw/CPI_2022.xlsx", sheet("Sheet1") firstrow clear
+{res}{text}(2 vars, 51 obs)
+r; t=0.01 14:42:01
+
+{com}. 
+. rename year purchase_year
+{res}{txt}r; t=0.00 14:42:01
+
+{com}. tostring purchase_year, replace
+{txt}purchase_year already string; no {res}replace
+{txt}r; t=0.00 14:42:01
+
+{com}. 
+. summarize cpi if purchase_year == "2022"
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 9}cpi {c |}{res}          1         100           .        100        100
+{txt}r; t=0.00 14:42:01
+
+{com}. local cpi_2022 = r(mean)
+{txt}r; t=0.00 14:42:01
+
+{com}. gen cpi_factor = `cpi_2022' / cpi
+{txt}r; t=0.00 14:42:01
+
+{com}. 
+. 
+. tempfile cpi_data
+{txt}r; t=0.00 14:42:01
+
+{com}. save `cpi_data', replace
+{txt}{p 0 4 2}
+(file {bf}
+C:\Users\iprad\AppData\Local\Temp\ST_3a68_000001.tmp{rm}
+not found)
+{p_end}
+{p 0 4 2}
+file {bf}
+C:\Users\iprad\AppData\Local\Temp\ST_3a68_000001.tmp{rm}
+saved
+as .dta format
+{p_end}
+r; t=0.00 14:42:01
+
+{com}. 
+. 
+. *------------------------------------------------------------------------------*
+. * 2. LOAD & PROCESS DURABLES DATA (S06C)
+. *------------------------------------------------------------------------------*
+. use "$data_raw/S06C.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.08 14:42:01
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.11 14:42:01
+{com}. exit, clear
