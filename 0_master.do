@@ -35,6 +35,10 @@ cap clear frames
 		global workspace "C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project"
 	}
 	
+	if "`c(username)'" == "Kapil Pokhrel" {
+		global workspace "C:\Users\iprad\OneDrive\Documents\GitHub\NLSSiv_consumption"
+	}
+	
 	**# Sub folder macros (global)
 	global data 			"$workspace/1_data"
 		gl data_raw 		"$data/1_raw"
