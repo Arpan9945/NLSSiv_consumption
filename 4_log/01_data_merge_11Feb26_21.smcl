@@ -1,0 +1,336 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/4_log/01_data_merge_11Feb26_21.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}11 Feb 2026, 21:48:37
+{txt}r; t=0.00 21:48:37
+{com}.         
+. {c )-}       
+{txt}r; t=0.01 21:48:37
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. use "$data_raw/S08.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.01 21:48:37
+
+{com}. 
+. 
+. foreach var in q08_06_i q08_14_i {c -(}
+{txt}  2{com}.     replace `var' = 0 if `var' == .
+{txt}  3{com}. {c )-}
+{txt}(40,470 real changes made)
+(39,424 real changes made)
+r; t=0.01 21:48:37
+
+{com}. 
+. * Calculate Total Health Cost for this Person (Chronic + Acute)
+. gen health_cost_person = q08_06_i + q08_14_i
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. 
+. **#1- Idea one is about distress financing.
+. *Want to see how the household financed their health cost
+. 
+. local distress_codes "2 3"
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. gen distress_chronic = 0
+{txt}r; t=0.00 21:48:37
+
+{com}. foreach c of local distress_codes {c -(}
+{txt}  2{com}.     replace distress_chronic = 1 if q08_07 == `c'
+{txt}  3{com}. {c )-}
+{txt}(80 real changes made)
+(871 real changes made)
+r; t=0.00 21:48:37
+
+{com}. 
+. gen distress_acute = 0
+{txt}r; t=0.00 21:48:37
+
+{com}. foreach c of local distress_codes {c -(}
+{txt}  2{com}.     replace distress_acute = 1 if q08_15 == `c'
+{txt}  3{com}. {c )-}
+{txt}(40 real changes made)
+(223 real changes made)
+r; t=0.00 21:48:37
+
+{com}. 
+. gen distress_person = (distress_chronic == 1 | distress_acute == 1)
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. * Collapse to Household Level
+. collapse (sum) health_exp_hh = health_cost_person /// Sum of all costs
+>          (max) distress_hh = distress_person /// If ANY member used distress finance, HH is 1
+>          , by(psu_number hh_number)
+{res}{txt}r; t=0.05 21:48:37
+
+{com}. 
+. * Label them nicely
+. label var health_exp_hh "Total Annual Household Health Expenditure (Nominal)"
+{txt}r; t=0.00 21:48:37
+
+{com}. label var distress_hh "Did HH use distress financing (Loans/Assets) for health?"
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. merge 1:1 psu_number hh_number using "$data_tmp/final_nominal_consumption.dta", keepusing(total_nom_cons)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 21:48:37
+
+{com}. drop _merge
+{txt}r; t=0.00 21:48:37
+
+{com}. merge 1:1 psu_number hh_number using "$data_raw/poverty.dta", keepusing (psu_number hh_number prov ad_4 prov domain ad_4 poor pcep quintile_pcep hhs_wt ind_wt hhsize pcep_food pcep_nonfood pcep poor)
+{res}{txt}(label {bf:{txt}ad_4lab} already defined)
+(label {bf:{txt}prov_lab} already defined)
+(label {bf:{txt}domainlab} already defined)
+
+{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.02 21:48:37
+
+{com}. drop _merge
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. replace health_exp_hh = 0 if health_exp_hh == .
+{txt}(0 real changes made)
+r; t=0.00 21:48:37
+
+{com}. replace distress_hh = 0 if distress_hh == .
+{txt}(0 real changes made)
+r; t=0.00 21:48:37
+
+{com}. 
+. * Calculating the indicators
+. gen total_hh_cons_real = pcep * hhsize
+{txt}r; t=0.00 21:48:37
+
+{com}. gen total_hh_nonfood = pcep_nonfood * hhsize
+{txt}r; t=0.00 21:48:37
+
+{com}. gen total_hh_food = pcep_food * hhsize
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. 
+. gen health_share_real = (health_exp_hh / total_hh_cons_real) * 100
+{txt}r; t=0.00 21:48:37
+
+{com}. gen health_share_nf   = (health_exp_hh/ total_hh_nonfood) * 100
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. *Catastrophic Expenditure (Threshold = 10% of Total Budget)
+. gen che_10 = (health_share_real > 10)
+{txt}r; t=0.00 21:48:37
+
+{com}. gen che_15 = (health_share_real > 15)
+{txt}r; t=0.00 21:48:37
+
+{com}. gen che_25 = (health_share_real > 25)
+{txt}r; t=0.00 21:48:37
+
+{com}. gen che_40 = (health_share_nf   > 40)
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. ** Analysis Part
+. 
+. gen pop_wt = hhs_wt * hhsize
+{txt}r; t=0.00 21:48:37
+
+{com}. 
+. 
+. * 2.i. Percent of Households in "Catastrophe" (>10% spending)
+. table quintile [iw=pop_wt], stat(mean che_10) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.115}
+  2{space 17} {c |}  {result:0.091}
+  3{space 17} {c |}  {result:0.086}
+  4{space 17} {c |}  {result:0.091}
+  5 (richest){space 7} {c |}  {result:0.059}
+  Total{space 13} {c |}  {result:0.089}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.10 21:48:37
+
+{com}. * 2.ii. Percent of Households in "Catastrophe" (>15% spending)
+. table quintile [iw=pop_wt], stat(mean che_15) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.077}
+  2{space 17} {c |}  {result:0.062}
+  3{space 17} {c |}  {result:0.051}
+  4{space 17} {c |}  {result:0.055}
+  5 (richest){space 7} {c |}  {result:0.037}
+  Total{space 13} {c |}  {result:0.056}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.05 21:48:37
+
+{com}. * 2.iii. Percent of Households in "Catastrophe" (>25% spending)
+. table quintile [iw=pop_wt], stat(mean che_25) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.050}
+  2{space 17} {c |}  {result:0.033}
+  3{space 17} {c |}  {result:0.025}
+  4{space 17} {c |}  {result:0.024}
+  5 (richest){space 7} {c |}  {result:0.019}
+  Total{space 13} {c |}  {result:0.030}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.04 21:48:37
+
+{com}. * 2.iv. Percent of Households in "Catastrophe" (>40% non-food spending)
+. table quintile [iw=pop_wt], stat(mean che_40) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.072}
+  2{space 17} {c |}  {result:0.047}
+  3{space 17} {c |}  {result:0.045}
+  4{space 17} {c |}  {result:0.041}
+  5 (richest){space 7} {c |}  {result:0.025}
+  Total{space 13} {c |}  {result:0.046}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.05 21:48:37
+
+{com}. // (Multiply result by 100 to get percentage)
+. 
+. * 3.i. Percent of Households in "Catastrophe" (>10% spending)
+. table poor [iw=pop_wt], stat(mean che_10) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 14}{c -}{c TT}{c -}{c -}{hline 5}
+{space 14} {c |}  {space 1}Mean
+{hline 14}{c -}{c +}{c -}{c -}{hline 5}
+Poverty status {c |}  {space 5}
+  0{space 11} {c |}  {result:0.082}
+  1{space 11} {c |}  {result:0.115}
+  Total{space 7} {c |}  {result:0.089}
+{hline 14}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.04 21:48:37
+
+{com}. * 3.ii. Percent of Households in "Catastrophe" (>15% spending)
+. table poor [iw=pop_wt], stat(mean che_15) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 14}{c -}{c TT}{c -}{c -}{hline 5}
+{space 14} {c |}  {space 1}Mean
+{hline 14}{c -}{c +}{c -}{c -}{hline 5}
+Poverty status {c |}  {space 5}
+  0{space 11} {c |}  {result:0.051}
+  1{space 11} {c |}  {result:0.078}
+  Total{space 7} {c |}  {result:0.056}
+{hline 14}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.04 21:48:37
+
+{com}. * 3.iii. Percent of Households in "Catastrophe" (>25% spending)
+. table poor [iw=pop_wt], stat(mean che_25) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 14}{c -}{c TT}{c -}{c -}{hline 5}
+{space 14} {c |}  {space 1}Mean
+{hline 14}{c -}{c +}{c -}{c -}{hline 5}
+Poverty status {c |}  {space 5}
+  0{space 11} {c |}  {result:0.025}
+  1{space 11} {c |}  {result:0.051}
+  Total{space 7} {c |}  {result:0.030}
+{hline 14}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.05 21:48:37
+
+{com}. * 2.iv. Percent of Households in "Catastrophe" (>40% non-food spending)
+. table poor [iw=pop_wt], stat(mean che_40) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 14}{c -}{c TT}{c -}{c -}{hline 5}
+{space 14} {c |}  {space 1}Mean
+{hline 14}{c -}{c +}{c -}{c -}{hline 5}
+Poverty status {c |}  {space 5}
+  0{space 11} {c |}  {result:0.039}
+  1{space 11} {c |}  {result:0.073}
+  Total{space 7} {c |}  {result:0.046}
+{hline 14}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.05 21:48:37
+
+{com}. 
+. ee
+{err}command {bf}ee{sf} is unrecognized
+{txt}{search r(199), local:r(199);} t=0.00 21:48:37
+
+end of do-file
+
+{search r(199), local:r(199);} t=0.57 21:48:37
+
+{com}. do "C:\Users\ARPANA~1\AppData\Local\Temp\STD36fc_000000.tmp"
+{txt}
+{com}. *------------------------------------------------------------------------------*
+. *            Cleaning for Health Expenses related stuffs in NLSS                                           *
+. /*
+> 
+>         Author:                         Arpan 
+>         Date created:           10th Feb 2026
+>         Date updated:           10th Feb 2026
+>         Last Updated by:        Arpan
+> 
+>         Notes:                          
+>                         
+>         Dependencies:           Run 0_master before
+> 
+> */
+. 
+. 
+. {c -(}
+. *------------------------------------------------------------------------------*
+. **#                                                     STATA setups                                                                        
+. *------------------------------------------------------------------------------*
+. clear
+{txt}r; t=0.00 22:18:22
+{com}. cap clear frames
+{txt}r; t=0.00 22:18:22
+{com}. set more off
+{txt}r; t=0.00 22:18:22
+{com}. set rmsg on
+{txt}r; t=0.00 22:18:22
+{com}. local dofilename "01_data_merge"
+{txt}r; t=0.00 22:18:22
+{com}. cap log close
+{smcl}
+{com}{sf}{ul off}

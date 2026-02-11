@@ -30,7 +30,8 @@ cap log close
 	
 	*--------------------------------------------------------------------------*
 	**# Export macros (global)
-	
+	// "$data_tmp/health_disease_individual.dta"
+	// "$data_tmp/health_financial_protection_hh.dta"
 	*--------------------------------------------------------------------------*
 	**# Programs
 	
@@ -97,30 +98,53 @@ label var distress_hh "Did HH use distress financing (Loans/Assets) for health?"
 
 merge 1:1 psu_number hh_number using "$data_tmp/final_nominal_consumption.dta", keepusing(total_nom_cons)
 drop _merge
-merge 1:1 psu_number hh_number using "$data_raw/poverty.dta", keepusing (psu_number hh_number prov ad_4 prov domain ad_4 poor pcep quintile_pcep hhs_wt ind_wt hhsize)
+merge 1:1 psu_number hh_number using "$data_raw/poverty.dta", keepusing (psu_number hh_number prov ad_4 prov domain ad_4 poor pcep quintile_pcep hhs_wt ind_wt hhsize pcep_food pcep_nonfood pcep poor)
 drop _merge
 
 replace health_exp_hh = 0 if health_exp_hh == .
 replace distress_hh = 0 if distress_hh == .
 
 * Calculating the indicators
+gen total_hh_cons_real = pcep * hhsize
+gen total_hh_nonfood = pcep_nonfood * hhsize
+gen total_hh_food = pcep_food * hhsize
 
-gen health_share = (health_exp_hh / total_nom_cons) * 100
+
+gen health_share_real = (health_exp_hh / total_hh_cons_real) * 100
+gen health_share_nf   = (health_exp_hh/ total_hh_nonfood) * 100
 
 *Catastrophic Expenditure (Threshold = 10% of Total Budget)
-gen che_10 = (health_share > 10)
-gen che_25 = (health_share > 25)
+gen che_10 = (health_share_real > 10)
+gen che_15 = (health_share_real > 15)
+gen che_25 = (health_share_real > 25)
+gen che_40 = (health_share_nf	> 40)
 
 ** Analysis Part
 
 gen pop_wt = hhs_wt * hhsize
 
-table quintile [iw=pop_wt], stat(mean health_share) nformat(%9.2f)
 
-* 2. Percent of Households in "Catastrophe" (>10% spending)
+* 2.i. Percent of Households in "Catastrophe" (>10% spending)
 table quintile [iw=pop_wt], stat(mean che_10) nformat(%9.3f) 
+* 2.ii. Percent of Households in "Catastrophe" (>15% spending)
+table quintile [iw=pop_wt], stat(mean che_15) nformat(%9.3f) 
+* 2.iii. Percent of Households in "Catastrophe" (>25% spending)
 table quintile [iw=pop_wt], stat(mean che_25) nformat(%9.3f) 
+* 2.iv. Percent of Households in "Catastrophe" (>40% non-food spending)
+table quintile [iw=pop_wt], stat(mean che_40) nformat(%9.3f) 
 // (Multiply result by 100 to get percentage)
+
+* 3.i. Percent of Households in "Catastrophe" (>10% spending)
+table poor [iw=pop_wt], stat(mean che_10) nformat(%9.3f) 
+* 3.ii. Percent of Households in "Catastrophe" (>15% spending)
+table poor [iw=pop_wt], stat(mean che_15) nformat(%9.3f) 
+* 3.iii. Percent of Households in "Catastrophe" (>25% spending)
+table poor [iw=pop_wt], stat(mean che_25) nformat(%9.3f) 
+* 2.iv. Percent of Households in "Catastrophe" (>40% non-food spending)
+table poor [iw=pop_wt], stat(mean che_40) nformat(%9.3f) 
+
+
+
 
 * 3. Percent of Households utilizing Distress Financing
 table quintile [iw=pop_wt], stat(mean distress_hh) nformat(%9.3f)
