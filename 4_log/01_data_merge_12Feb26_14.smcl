@@ -1,0 +1,355 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:/Users/Arpan Acharya/OneDrive - HERD/Documents/Personal/CIH-project/4_log/01_data_merge_12Feb26_14.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}12 Feb 2026, 14:11:18
+{txt}r; t=0.00 14:11:18
+{com}.         
+. {c )-}       
+{txt}r; t=0.01 14:11:18
+
+{com}. *------------------------------------------------------------------------------*
+. **# Load the dataset
+. use "$data_raw/S08.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.01 14:11:18
+
+{com}. 
+. 
+. foreach var in q08_06_i q08_14_i {c -(}
+{txt}  2{com}.     replace `var' = 0 if `var' == .
+{txt}  3{com}. {c )-}
+{txt}(40,470 real changes made)
+(39,424 real changes made)
+r; t=0.07 14:11:18
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. **# 1. Convert Health Costs to Monthly
+. *------------------------------------------------------------------------------*
+. * Chronic (q08_06) is usually 12-month recall -> Divide by 12
+. * Acute (q08_14) is usually 30-day recall -> Keep as is
+. 
+. gen health_cost_person_month = (q08_06_i / 12) + q08_14_i
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. 
+. **# Distress Financing
+. * Want to see how the household financed their health cost
+. local distress_codes "2 3"
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. gen distress_chronic = 0
+{txt}r; t=0.00 14:11:18
+
+{com}. foreach c of local distress_codes {c -(}
+{txt}  2{com}.     replace distress_chronic = 1 if q08_07 == `c'
+{txt}  3{com}. {c )-}
+{txt}(80 real changes made)
+(871 real changes made)
+r; t=0.01 14:11:18
+
+{com}. 
+. gen distress_acute = 0
+{txt}r; t=0.00 14:11:18
+
+{com}. foreach c of local distress_codes {c -(}
+{txt}  2{com}.     replace distress_acute = 1 if q08_15 == `c'
+{txt}  3{com}. {c )-}
+{txt}(40 real changes made)
+(223 real changes made)
+r; t=0.00 14:11:18
+
+{com}. 
+. gen distress_person = (distress_chronic == 1 | distress_acute == 1)
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. * Collapse to Household Level
+. * Note: We are now summing the MONTHLY health cost
+. collapse (sum) health_exp_hh_month = health_cost_person_month /// Sum of monthly costs
+>          (max) distress_hh = distress_person /// If ANY member used distress finance
+>          , by(psu_number hh_number)
+{res}{txt}r; t=0.04 14:11:18
+
+{com}. 
+. * Label them nicely
+. label var health_exp_hh_month "Total Monthly Household Health Expenditure"
+{txt}r; t=0.00 14:11:18
+
+{com}. label var distress_hh "Did HH use distress financing (Loans/Assets)?"
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. * Merge Consumption Data
+. merge 1:1 psu_number hh_number using "$data_tmp/final_nominal_consumption.dta", keepusing(total_nom_cons)
+{res}
+{txt}{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.01 14:11:18
+
+{com}. drop _merge
+{txt}r; t=0.00 14:11:18
+
+{com}. merge 1:1 psu_number hh_number using "$data_raw/poverty.dta", keepusing (psu_number hh_number prov ad_4 prov domain ad_4 poor pcep quintile_pcep hhs_wt ind_wt hhsize pcep_food pcep_nonfood pcep poor)
+{res}{txt}(label {bf:{txt}ad_4lab} already defined)
+(label {bf:{txt}prov_lab} already defined)
+(label {bf:{txt}domainlab} already defined)
+
+{col 5}Result{col 33}Number of obs
+{col 5}{hline 41}
+{col 5}Not matched{col 30}{res}               0
+{txt}{col 5}Matched{col 30}{res}           9,600{txt}  (_merge==3)
+{col 5}{hline 41}
+r; t=0.02 14:11:18
+
+{com}. drop _merge
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. replace health_exp_hh_month = 0 if health_exp_hh_month == .
+{txt}(0 real changes made)
+r; t=0.00 14:11:18
+
+{com}. replace distress_hh = 0 if distress_hh == .
+{txt}(0 real changes made)
+r; t=0.00 14:11:18
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. **# 2. Convert Consumption to Monthly
+. *------------------------------------------------------------------------------*
+. * PCEP variables in NLSS poverty files are ANNUAL. 
+. * We calculate Total HH Annual first, then divide by 12.
+. 
+. gen total_hh_cons_month   = (pcep * hhsize) / 12
+{txt}r; t=0.00 14:11:18
+
+{com}. gen total_hh_nonfood_month = (pcep_nonfood * hhsize) / 12
+{txt}r; t=0.00 14:11:18
+
+{com}. gen total_hh_food_month    = (pcep_food * hhsize) / 12
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. **# 3. Calculate Shares (Monthly Basis)
+. *------------------------------------------------------------------------------*
+. 
+. gen health_share_total  = (health_exp_hh_month / total_hh_cons_month) * 100
+{txt}r; t=0.00 14:11:18
+
+{com}. gen health_share_nf     = (health_exp_hh_month / total_hh_nonfood_month) * 100
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. * Catastrophic Expenditure Indicators
+. gen che_10 = (health_share_total > 10)
+{txt}r; t=0.00 14:11:18
+
+{com}. gen che_15 = (health_share_total > 15)
+{txt}r; t=0.00 14:11:18
+
+{com}. gen che_25 = (health_share_total > 25)
+{txt}r; t=0.00 14:11:18
+
+{com}. gen che_40 = (health_share_nf > 40)
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. ** Analysis Part
+. gen pop_wt = hhs_wt * hhsize
+{txt}r; t=0.00 14:11:18
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. **# 4. Tables
+. *------------------------------------------------------------------------------*
+. 
+. di "--- Percent of Households in Catastrophe (By Consumption Quintile) ---"
+{res}--- Percent of Households in Catastrophe (By Consumption Quintile) ---
+{txt}r; t=0.00 14:11:18
+
+{com}. * 2.i. Catastrophe (>10% Total Monthly Spending)
+. table quintile [iw=pop_wt], stat(mean che_10) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.215}
+  2{space 17} {c |}  {result:0.201}
+  3{space 17} {c |}  {result:0.175}
+  4{space 17} {c |}  {result:0.163}
+  5 (richest){space 7} {c |}  {result:0.135}
+  Total{space 13} {c |}  {result:0.178}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.06 14:11:18
+
+{com}. * 2.ii. Catastrophe (>15% Total Monthly Spending)
+. table quintile [iw=pop_wt], stat(mean che_15) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.145}
+  2{space 17} {c |}  {result:0.140}
+  3{space 17} {c |}  {result:0.111}
+  4{space 17} {c |}  {result:0.100}
+  5 (richest){space 7} {c |}  {result:0.062}
+  Total{space 13} {c |}  {result:0.112}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.06 14:11:18
+
+{com}. * 2.iii. Catastrophe (>25% Total Monthly Spending)
+. table quintile [iw=pop_wt], stat(mean che_25) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.091}
+  2{space 17} {c |}  {result:0.069}
+  3{space 17} {c |}  {result:0.054}
+  4{space 17} {c |}  {result:0.048}
+  5 (richest){space 7} {c |}  {result:0.034}
+  Total{space 13} {c |}  {result:0.059}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.06 14:11:18
+
+{com}. * 2.iv. Catastrophe (>40% Non-Food Monthly Spending)
+. table quintile [iw=pop_wt], stat(mean che_40) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.134}
+  2{space 17} {c |}  {result:0.107}
+  3{space 17} {c |}  {result:0.089}
+  4{space 17} {c |}  {result:0.078}
+  5 (richest){space 7} {c |}  {result:0.045}
+  Total{space 13} {c |}  {result:0.090}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.06 14:11:18
+
+{com}. 
+. di "--- Percent of Households in Catastrophe (By Poverty Status) ---"
+{res}--- Percent of Households in Catastrophe (By Poverty Status) ---
+{txt}r; t=0.00 14:11:18
+
+{com}. * 3.i. Catastrophe (>10% Total Monthly Spending)
+. table poor [iw=pop_wt], stat(mean che_10) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 14}{c -}{c TT}{c -}{c -}{hline 5}
+{space 14} {c |}  {space 1}Mean
+{hline 14}{c -}{c +}{c -}{c -}{hline 5}
+Poverty status {c |}  {space 5}
+  0{space 11} {c |}  {result:0.168}
+  1{space 11} {c |}  {result:0.214}
+  Total{space 7} {c |}  {result:0.178}
+{hline 14}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.05 14:11:18
+
+{com}. * 3.ii. Catastrophe (>15% Total Monthly Spending)
+. table poor [iw=pop_wt], stat(mean che_15) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 14}{c -}{c TT}{c -}{c -}{hline 5}
+{space 14} {c |}  {space 1}Mean
+{hline 14}{c -}{c +}{c -}{c -}{hline 5}
+Poverty status {c |}  {space 5}
+  0{space 11} {c |}  {result:0.103}
+  1{space 11} {c |}  {result:0.145}
+  Total{space 7} {c |}  {result:0.112}
+{hline 14}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.05 14:11:19
+
+{com}. * 3.iii. Catastrophe (>25% Total Monthly Spending)
+. table poor [iw=pop_wt], stat(mean che_25) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 14}{c -}{c TT}{c -}{c -}{hline 5}
+{space 14} {c |}  {space 1}Mean
+{hline 14}{c -}{c +}{c -}{c -}{hline 5}
+Poverty status {c |}  {space 5}
+  0{space 11} {c |}  {result:0.051}
+  1{space 11} {c |}  {result:0.091}
+  Total{space 7} {c |}  {result:0.059}
+{hline 14}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.06 14:11:19
+
+{com}. * 3.iv. Catastrophe (>40% Non-Food Monthly Spending)
+. table poor [iw=pop_wt], stat(mean che_40) nformat(%9.3f) 
+{res}
+{smcl}
+{reset}{...}
+{hline 14}{c -}{c TT}{c -}{c -}{hline 5}
+{space 14} {c |}  {space 1}Mean
+{hline 14}{c -}{c +}{c -}{c -}{hline 5}
+Poverty status {c |}  {space 5}
+  0{space 11} {c |}  {result:0.079}
+  1{space 11} {c |}  {result:0.134}
+  Total{space 7} {c |}  {result:0.090}
+{hline 14}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.06 14:11:19
+
+{com}. 
+. 
+. * 3. Percent of Households utilizing Distress Financing
+. table quintile [iw=pop_wt], stat(mean distress_hh) nformat(%9.3f)
+{res}
+{smcl}
+{reset}{...}
+{hline 20}{c -}{c TT}{c -}{c -}{hline 5}
+{space 20} {c |}  {space 1}Mean
+{hline 20}{c -}{c +}{c -}{c -}{hline 5}
+Expenditure quintile {c |}  {space 5}
+  1 (poorest){space 7} {c |}  {result:0.155}
+  2{space 17} {c |}  {result:0.115}
+  3{space 17} {c |}  {result:0.091}
+  4{space 17} {c |}  {result:0.068}
+  5 (richest){space 7} {c |}  {result:0.055}
+  Total{space 13} {c |}  {result:0.097}
+{hline 20}{c -}{c BT}{c -}{c -}{hline 5}
+r; t=0.06 14:11:19
+
+{com}. 
+. eeee
+{err}command {bf}eeee{sf} is unrecognized
+{txt}{search r(199), local:r(199);} t=0.00 14:11:19
+
+end of do-file
+
+{search r(199), local:r(199);} t=0.68 14:11:19
+
+{com}. sum che_10 che_15 che_25 che_40
+
+{txt}    Variable {c |}        Obs        Mean    Std. dev.       Min        Max
+{hline 13}{c +}{hline 57}
+{space 6}che_10 {c |}{res}      9,600    .1865625    .3895802          0          1
+{txt}{space 6}che_15 {c |}{res}      9,600    .1208333    .3259505          0          1
+{txt}{space 6}che_25 {c |}{res}      9,600    .0657292     .247821          0          1
+{txt}{space 6}che_40 {c |}{res}      9,600    .0973958    .2965115          0          1
+{txt}r; t=0.01 14:11:32
+
+{com}. exit, clear

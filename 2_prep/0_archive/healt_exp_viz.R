@@ -276,19 +276,19 @@ library(grid)
 
 # --- 1. MANUAL DATA ENTRY ---
 plot_data <- tibble(
-  Metric = c("Greater than 10%\n(Total Budget)", 
-             "Greater than 15%\n(Total Budget)", 
-             "Greater than 25%\n(Total Budget)", 
-             "Greater than 40%\n(Non-Food Budget)*"),
+  Metric = c("Greater than 10%\n(Total Consumption)", 
+             "Greater than 15%\n(Total Consumption)", 
+             "Greater than 25%\n(Total Consumption)", 
+             "Greater than 40%\n(Non-Food Consumption)*"),
   Poor = c(11.5, 7.8, 5.1, 7.3),
   `Non-Poor` = c(8.2, 5.1, 2.5, 3.9)
 ) %>%
   pivot_longer(cols = c(Poor, `Non-Poor`), names_to = "Status", values_to = "Incidence") %>%
   # Set Order: "Non-Food" at the top
-  mutate(Metric = factor(Metric, levels = c("Greater than 40%\n(Non-Food Budget)*", 
-                                            "Greater than 25%\n(Total Budget)", 
-                                            "Greater than 15%\n(Total Budget)", 
-                                            "Greater than 10%\n(Total Budget)")))
+  mutate(Metric = factor(Metric, levels = c("Greater than 40%\n(Non-Food Consumption)*", 
+                                            "Greater than 25%\n(Total Consumption)", 
+                                            "Greater than 15%\n(Total Consumption)", 
+                                            "Greater than 10%\n(Total Consumption)")))
 
 # --- 2. ECONOMIST STYLE PLOT ---
 
