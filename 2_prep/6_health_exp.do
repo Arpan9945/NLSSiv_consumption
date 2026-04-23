@@ -102,7 +102,7 @@ label var health_exp_hh_month "Total Monthly Household Health Expenditure"
 label var distress_hh "Did HH use distress financing (Loans/Assets)?"
 
 * Merge Consumption Data
-merge 1:1 psu_number hh_number using "$data_tmp/final_nominal_consumption.dta", keepusing(total_nom_cons)
+merge 1:1 psu_number hh_number using "$data_tmp/final_consumption_aggregate.dta", keepusing(total_consumption_nominal)
 drop _merge
 merge 1:1 psu_number hh_number using "$data_raw/poverty.dta", keepusing (psu_number hh_number prov ad_4 prov domain ad_4 poor pcep quintile_pcep hhs_wt ind_wt hhsize pcep_food pcep_nonfood pcep poor)
 drop _merge
@@ -174,7 +174,7 @@ save "$data_tmp/health_financial_protection_hh.dta", replace
 **# INDIVIDUAL DATA SECTION (Unchanged, but kept for completeness)
 *------------------------------------------------------------------------------*
 use "$data_raw/S08.dta", clear
-merge m:1 psu_number hh_number using "$data_tmp/final_nominal_consumption.dta", keepusing(total_nom_cons)
+merge m:1 psu_number hh_number using "$data_tmp/final_consumption_aggregate.dta", keepusing(total_consumption_nominal)
 drop _merge
 merge m:1 psu_number hh_number using "$data_raw/poverty.dta", keepusing (psu_number hh_number prov ad_4 prov domain ad_4 poor pcep quintile_pcep hhs_wt ind_wt hhsize)
 drop _merge

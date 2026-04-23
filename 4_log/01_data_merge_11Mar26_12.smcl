@@ -1,0 +1,63 @@
+{smcl}
+{com}{sf}{ul off}{txt}{.-}
+      name:  {res}<unnamed>
+       {txt}log:  {res}C:\Users\iprad\OneDrive\Documents\GitHub\NLSSiv_consumption/4_log/01_data_merge_11Mar26_12.smcl
+  {txt}log type:  {res}smcl
+ {txt}opened on:  {res}11 Mar 2026, 12:59:35
+{txt}r; t=0.00 12:59:35
+{com}.         
+. {c )-}       
+{txt}r; t=0.00 12:59:35
+
+{com}. *------------------------------------------------------------------------------*
+. **#Load the dataset
+. 
+. 
+. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 12:59:35
+
+{com}. display "STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)"
+{res}STEP 1: NON-FOOD NON-DURABLE AGGREGATE (S06A)
+{txt}r; t=0.00 12:59:35
+
+{com}. display "======================================================================"
+{res}======================================================================
+{txt}r; t=0.00 12:59:35
+
+{com}. 
+. *------------------------------------------------------------------------------*
+. * STEP 1: NON-FOOD NON-DURABLE (SECTION 6A) - STRICT EXCLUSIONS                *
+. *------------------------------------------------------------------------------*
+. 
+. tempfile sec6a_agg
+{txt}r; t=0.00 12:59:35
+
+{com}. 
+. preserve 
+{txt}r; t=0.00 12:59:35
+
+{com}.     use "$data_raw/S06A.dta", clear
+{txt}(NLSS04_DICT)
+r; t=0.09 12:59:35
+
+{com}. 
+{txt}end of do-file
+
+r; t=0.11 12:59:35
+{com}. do "C:\Users\iprad\AppData\Local\Temp\STD54a0_000000.tmp"
+{txt}
+{com}. 
+.     *--------------------------------------------------------------------------*
+.     * A. DEFINE EXCLUSIONS (Based on Methodology Text)
+.     *--------------------------------------------------------------------------*
+.         
+.         gen is_header = mod(s06a_code, 10) == 0
+{err}s06a_code not found
+{txt}{search r(111), local:r(111);} t=0.00 13:10:08
+
+end of do-file
+
+{search r(111), local:r(111);} t=0.01 13:10:08
+
+{com}. exit, clear
